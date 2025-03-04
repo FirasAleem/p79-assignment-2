@@ -1,7 +1,7 @@
 import unittest
 import random
 import time
-from x25519.x25519 import X25519
+from x25519.x25519 import X25519, X25519PrivateKey, X25519PublicKey
 from nacl.bindings import crypto_scalarmult
 
 
@@ -15,13 +15,16 @@ class TestX25519(unittest.TestCase):
         """Test scalar multiplication with the maximum possible scalar and validate against PyNaCl."""
         max_scalar = (1 << 255) - 1
         max_scalar_bytes = max_scalar.to_bytes(32, 'little')
-        public_key = b'\x09' + b'\x00' * 31  # Base point
+        
+        # Convert to key objects
+        private_key = X25519PrivateKey.from_bytes(max_scalar_bytes)
+        public_key = X25519PublicKey.from_bytes(b'\x09' + b'\x00' * 31)  # Base point
 
         # X25519 implementation
-        result_x = self.x25519_ladder.scalar_multiply(max_scalar_bytes, public_key)
+        result_x = self.x25519_ladder.scalar_multiply(private_key, public_key)
         
         # Use PyNaCl for reference
-        expected_output = crypto_scalarmult(max_scalar_bytes, public_key)
+        expected_output = crypto_scalarmult(private_key.to_bytes(), public_key.to_bytes())
         
         # Assert that the results match
         self.assertEqual(result_x, expected_output, "Mismatch between X25519 and PyNaCl for max scalar")
@@ -30,13 +33,15 @@ class TestX25519(unittest.TestCase):
         """Test scalar multiplication with large scalar values and validate with PyNaCl."""
         large_scalar = (1 << 253) - 230703
         large_scalar_bytes = large_scalar.to_bytes(32, 'little')
-        base_point = b'\x09' + b'\x00' * 31  # u-coordinate of the base point
         
+        private_key = X25519PrivateKey.from_bytes(large_scalar_bytes)
+        public_key = X25519PublicKey.from_bytes(b'\x09' + b'\x00' * 31)  # Base point
+
         # X25519 implementation
-        result_x = self.x25519_ladder.scalar_multiply(large_scalar_bytes, base_point)
+        result_x = self.x25519_ladder.scalar_multiply(private_key, public_key)
         
         # Use PyNaCl for reference
-        expected_output = crypto_scalarmult(large_scalar_bytes, base_point)
+        expected_output = crypto_scalarmult(private_key.to_bytes(), public_key.to_bytes())
         
         # Assert that the result matches PyNaCl's output
         self.assertEqual(result_x, expected_output, "Mismatch with PyNaCl result for large scalar")
@@ -56,7 +61,10 @@ class TestX25519(unittest.TestCase):
         
         # Standard base point for X25519.
         base_point = b'\x09' + b'\x00' * 31
+        private_key = X25519PrivateKey.from_bytes(scalar_bytes)
+        public_key = X25519PublicKey.from_bytes(b'\x09' + b'\x00' * 31)  # Base point
 
+        
         iterations = 1000
         total_time_ours = 0.0
         total_time_pynacl = 0.0
@@ -68,13 +76,13 @@ class TestX25519(unittest.TestCase):
         for _ in range(iterations):
             # Time our MontgomeryLadder implementation.
             start_time = time.time()
-            result_ours = self.x25519_ladder.scalar_multiply(scalar_bytes, base_point)
+            result_ours = self.x25519_ladder.scalar_multiply(private_key, public_key)
             duration_ours = time.time() - start_time
             total_time_ours += duration_ours
 
             # Time PyNaCl's implementation.
             start_time = time.time()
-            result_pynacl = crypto_scalarmult(scalar_bytes, base_point)
+            result_pynacl = crypto_scalarmult(private_key.to_bytes(), public_key.to_bytes())
             duration_pynacl = time.time() - start_time
             total_time_pynacl += duration_pynacl
 

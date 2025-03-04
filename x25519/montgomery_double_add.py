@@ -88,6 +88,7 @@ class MontgomeryDoubleAdd:
             return None
 
         x1, y1 = P
+        
         if y1 == 0:
             # The tangent is vertical ∴ the result is the identity
             return None

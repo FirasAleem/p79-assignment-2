@@ -31,6 +31,7 @@ class X25519:
         if method not in ['ladder', 'double_and_add']:
             raise ValueError("Method must be 'ladder' or 'double_and_add'.")
         self.method = method
+    
 
     def scalar_multiply(self, private_key: "X25519PrivateKey", public_key: "X25519PublicKey") -> bytes:
         """
@@ -43,8 +44,12 @@ class X25519:
         Returns:
             32-byte little-endian representation of the resulting x-coordinate.
         """
-        scalar = bytes_to_int(private_key)
-        u = bytes_to_int(public_key)
+        if isinstance(public_key, bytes):  # Convert bytes to X25519PublicKey if needed
+            public_key = X25519PublicKey.from_bytes(public_key)
+
+        
+        scalar = bytes_to_int(private_key.to_bytes())
+        u = bytes_to_int(public_key.to_bytes())
         
         if self.method == 'ladder':
             ladder = MontgomeryLadder(p=P)
@@ -67,12 +72,24 @@ class X25519PublicKey:
             raise ValueError("Public key must be 32 bytes long.")
         self._key_bytes = key_bytes  # Store as bytes internally
 
+    def to_bytes(self) -> bytes:
+        """Returns the private key as 32 bytes."""
+        return self._key_bytes
+
+    @staticmethod
+    def from_bytes(data: bytes) -> "X25519PublicKey":
+        """Creates a public key from a 32-byte representation."""
+        if len(data) != 32:
+            raise ValueError("Public key must be exactly 32 bytes long.")
+        return X25519PublicKey(data)
+
     @staticmethod
     def from_private_key(private_key: "X25519PrivateKey") -> "X25519PublicKey":
         """Generates the public key corresponding to a given private key."""
         BASE_X = b'\x09' + b'\x00' * 31  # Base point
         x25519 = X25519()
-        return x25519.scalar_multiply(private_key, BASE_X)
+        public_key_bytes = x25519.scalar_multiply(private_key, BASE_X) 
+        return X25519PublicKey(public_key_bytes) 
 
 
 class X25519PrivateKey:
@@ -82,6 +99,18 @@ class X25519PrivateKey:
         if len(key_bytes) != 32:
             raise ValueError("Private key must be 32 bytes long.")
         self._key_bytes = key_bytes  # Assume already clamped
+    
+    def to_bytes(self) -> bytes:
+        """Returns the public key as 32 bytes."""
+        return self._key_bytes
+
+    @staticmethod
+    def from_bytes(data: bytes) -> "X25519PrivateKey":
+        """Creates a private key from a 32-byte representation, ensuring clamping."""
+        if len(data) != 32:
+            raise ValueError("Private key must be exactly 32 bytes long.")
+        clamped_scalar = clamp_scalar(data)  # Ensure it is correctly clamped
+        return X25519PrivateKey(int_to_bytes(clamped_scalar))
 
     @staticmethod
     def generate() -> "X25519PrivateKey":

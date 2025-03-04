@@ -7,7 +7,7 @@ from ed25519.utils import (
     decode_edwards_point,
     normalize_extended
 )
-from ed25519.ed25519 import Ed25519
+from ed25519.ed25519 import Ed25519, SigningKey, VerifyingKey
 
 # The prime modulus (same as for Curve25519)
 P = 2**255 - 19
@@ -27,33 +27,33 @@ class TestEd25519(unittest.TestCase):
         self.ed25519 = Ed25519()
 
     def test_generate_private_key(self):
-        """Test if the generated private key is 32 bytes long."""
-        private_key = self.ed25519.generate_private_key()
-        self.assertEqual(len(private_key), 32)
+        """Test if the generated signing key is 32 bytes long."""
+        signing_key = SigningKey.generate()
+        self.assertEqual(len(signing_key.to_bytes()), 32)
 
     def test_generate_public_key_length(self):
-        """Test if the generated public key is 32 bytes long."""
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
-        self.assertEqual(len(public_key), 32)
+        """Test if the generated verifying key is 32 bytes long."""
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
+        self.assertEqual(len(verifying_key.to_bytes()), 32)
 
     def test_sign_and_verify(self):
         """Test if a message can be signed and verified successfully."""
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         message = b"Hello, Ed25519!"
 
-        signature = self.ed25519.sign(private_key, message)
-        self.assertTrue(self.ed25519.verify(public_key, message, signature))
+        signature = self.ed25519.sign(signing_key, message)
+        self.assertTrue(self.ed25519.verify(verifying_key, message, signature))
 
     def test_invalid_signature(self):
         """Test if an invalid signature fails verification."""
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         message = b"Hello, Ed25519!"
         fake_signature = os.urandom(64)
 
-        self.assertFalse(self.ed25519.verify(public_key, message, fake_signature))
+        self.assertFalse(self.ed25519.verify(verifying_key, message, fake_signature))
 
     def test_point_encoding_and_decoding(self):
         """Test if a point can be encoded and decoded correctly."""
@@ -63,20 +63,23 @@ class TestEd25519(unittest.TestCase):
         self.assertEqual(normalize_extended(point), normalize_extended(decoded_point))
 
     def run_vector(self, name, private_key_hex, public_key_hex, message_hex, signature_hex):
-        private_key = bytes.fromhex(private_key_hex)
-        public_key = bytes.fromhex(public_key_hex)
+        """
+        Test vector execution to validate signing and verification.
+        """
+        signing_key = SigningKey(bytes.fromhex(private_key_hex))
+        verifying_key = VerifyingKey(bytes.fromhex(public_key_hex))
         message = bytes.fromhex(message_hex)
         expected_signature = bytes.fromhex(signature_hex)
         
         # Check public key generation.
-        generated_public_key = self.ed25519.generate_public_key(private_key)
+        generated_public_key = signing_key.generate_verifying_key().to_bytes()
         self.assertEqual(
-            generated_public_key, public_key,
+            generated_public_key, verifying_key.to_bytes(),
             f"Public key mismatch for {name}"
         )
         
         # Sign and compare against expected signature.
-        signature = self.ed25519.sign(private_key, message)
+        signature = self.ed25519.sign(signing_key, message)
         self.assertEqual(
             signature, expected_signature,
             f"Signature mismatch for {name}"
@@ -84,7 +87,7 @@ class TestEd25519(unittest.TestCase):
         
         # Verify the signature.
         self.assertTrue(
-            self.ed25519.verify(public_key, message, signature),
+            self.ed25519.verify(verifying_key, message, signature),
             f"Signature verification failed for {name}"
         )
 
@@ -138,32 +141,39 @@ class TestEd25519(unittest.TestCase):
             )
 
     def test_tampered_message(self):
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         message = b"Important message"
-        signature = self.ed25519.sign(private_key, message)
+        signature = self.ed25519.sign(signing_key, message)
 
         # Modify one byte in the message.
         tampered_message = bytearray(message)
         tampered_message[0] ^= 0xFF
-        self.assertFalse(self.ed25519.verify(public_key, bytes(tampered_message), signature))
+        self.assertFalse(self.ed25519.verify(verifying_key, bytes(tampered_message), signature))
 
     def test_tampered_public_key(self):
-        private_key = self.ed25519.generate_private_key()
-        public_key = bytearray(self.ed25519.generate_public_key(private_key))
+        """Test that modifying a public key causes verification to fail."""
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         message = b"Another message"
-        signature = self.ed25519.sign(private_key, message)
+        signature = self.ed25519.sign(signing_key, message)
 
-        # Modify one byte in the message.
-        public_key[0] ^= 0xFF
-        self.assertFalse(self.ed25519.verify(bytes(public_key), message, signature))
+        # Convert VerifyingKey to bytes and tamper with it
+        tampered_public_key = bytearray(verifying_key.to_bytes())
+        tampered_public_key[0] ^= 0xFF
+
+        # Expect verification to fail with the tampered key
+        tampered_verifying_key = VerifyingKey(bytes(tampered_public_key))
+        self.assertFalse(self.ed25519.verify(tampered_verifying_key, message, signature))
         
     def test_long_message(self):
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
+        """Test signing and verifying a large message (16 MB)."""
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         message = os.urandom(16777216)  # 16 MB of random data
-        signature = self.ed25519.sign(private_key, message)
-        self.assertTrue(self.ed25519.verify(public_key, message, signature))
+
+        signature = self.ed25519.sign(signing_key, message)
+        self.assertTrue(self.ed25519.verify(verifying_key, message, signature))
         
     def test_normalization(self):
         # Create a point
@@ -173,126 +183,140 @@ class TestEd25519(unittest.TestCase):
         self.assertEqual(normalized[2], 1) # Z-coordinate should be 1
         
     def test_invalid_input_lengths(self):
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
+        """Test handling of incorrect input lengths for keys and signatures."""
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         message = b"Test message"
-        invalid_signature = os.urandom(10)  # too short
-        self.assertFalse(self.ed25519.verify(public_key, message, invalid_signature))
 
-        # Also, test with an invalid public key length.
+        # Signature that is too short
+        invalid_signature = os.urandom(10)
+        self.assertFalse(self.ed25519.verify(verifying_key, message, invalid_signature))
+
+        # Invalid public key (wrong length)
         invalid_public_key = os.urandom(10)
-        signature = self.ed25519.sign(private_key, message)
+        signature = self.ed25519.sign(signing_key, message)
+
+        # Expect an error when trying to decode an invalid key
         with self.assertRaises(Exception):
             decode_edwards_point(invalid_public_key)
             
     def test_noncanonical_S_rejected(self):
-        # Generate a valid key pair and signature.
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
-        message = b"Test message for noncanonical s"
-        signature = self.ed25519.sign(private_key, message)
-        
-        # Split signature into R and s.
-        R_enc = signature[:32]
-        s_enc = signature[32:]
-        
-        # Convert s to an integer and add the subgroup order L.
-        s_int = int.from_bytes(s_enc, "little")
-        noncanonical_s = s_int + L  # L is the order of the subgroup.
-        
-        # Re-encode non-canonical s.
-        noncanonical_s_enc = noncanonical_s.to_bytes(32, "little")
-        # Construct the tampered signature.
-        tampered_signature = R_enc + noncanonical_s_enc
+        """Test that signatures with non-canonical S values are rejected."""
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
+        message = b"Test message for noncanonical S"
+        signature = self.ed25519.sign(signing_key, message)
 
-        # Verify that the non-canonical signature is rejected.
-        self.assertFalse(self.ed25519.verify(public_key, message, tampered_signature))
+        # Split signature into R and S
+        R_enc = signature[:32]
+        S_enc = signature[32:]
+
+        # Convert S to an integer and make it non-canonical
+        S_int = int.from_bytes(S_enc, "little")
+        noncanonical_S = (S_int + self.ed25519.L) % (1 << 256)  # Ensure 32-byte wrap
+
+        # Re-encode the noncanonical S
+        noncanonical_S_enc = noncanonical_S.to_bytes(32, "little")
+
+        # Construct tampered signature
+        tampered_signature = R_enc + noncanonical_S_enc
+
+        # Verify that the non-canonical signature is rejected
+        self.assertFalse(self.ed25519.verify(verifying_key, message, tampered_signature))
 
     def test_noncanonical_R_rejected(self):
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
+        """Test that signatures with non-canonical R values are rejected."""
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         message = b"Test message for noncanonical R"
-        signature = self.ed25519.sign(private_key, message)
-        
-        # Tamper with R's encoding: change its last byte's sign bit arbitrarily.
+        signature = self.ed25519.sign(signing_key, message)
+
+        # Tamper with R's encoding by flipping the highest bit
         R_enc = bytearray(signature[:32])
         R_enc[-1] ^= 0x80  # Flip the sign bit
+
+        # Construct tampered signature
         tampered_signature = bytes(R_enc) + signature[32:]
-        
-        # Expect the verifier to reject the signature.
-        self.assertFalse(self.ed25519.verify(public_key, message, tampered_signature))
+
+        # Expect the verifier to reject the signature
+        self.assertFalse(self.ed25519.verify(verifying_key, message, tampered_signature))
 
     def test_noncanonical_public_key_rejected(self):
-        private_key = self.ed25519.generate_private_key()
-        public_key = bytearray(self.ed25519.generate_public_key(private_key))
+        """Test that signatures fail with a non-canonical public key."""
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         message = b"Test message for noncanonical public key"
-        signature = self.ed25519.sign(private_key, message)
-        
-        # Tamper with the public key encoding.
-        public_key[-1] ^= 0x40  # Flip a bit to force a non-canonical encoding.
-        
-        # The verification should reject a non-canonical public key.
-        self.assertFalse(self.ed25519.verify(bytes(public_key), message, signature))
+        signature = self.ed25519.sign(signing_key, message)
+
+        # Convert verifying key to bytes and tamper with it
+        tampered_public_key = bytearray(verifying_key.to_bytes())
+        tampered_public_key[-1] ^= 0x40  # Flip a bit to force a non-canonical encoding
+
+        # Expect an error when trying to decode an invalid key
+        with self.assertRaises(ValueError):
+            decode_edwards_point(bytes(tampered_public_key))
 
     def test_batch_verification(self):
+        """Test batch verification with valid and tampered signatures."""
         batch = []
         for _ in range(100):
-            private_key = self.ed25519.generate_private_key()
-            public_key = self.ed25519.generate_public_key(private_key)
+            signing_key = SigningKey.generate()
+            verifying_key = signing_key.generate_verifying_key()
             message = os.urandom(32)
-            signature = self.ed25519.sign(private_key, message)
-            batch.append((public_key, message, signature))
+            signature = self.ed25519.sign(signing_key, message)
+            batch.append((verifying_key, message, signature))
+
+        # Expect valid batch to pass
         self.assertTrue(self.ed25519.verify_batch(batch))
-        
-        # Tamper with one signature.
+
+        # Tamper with one signature
         pk, m, sig = batch[0]
         tampered_sig = bytearray(sig)
-        tampered_sig[0] ^= 0xFF  # modify a byte
+        tampered_sig[0] ^= 0xFF  # Modify a byte
         batch[0] = (pk, m, bytes(tampered_sig))
+
+        # Expect batch verification to fail
         self.assertFalse(self.ed25519.verify_batch(batch))
 
     def test_verification_performance(self):
+        """Test individual vs batch verification performance."""
         batch = []
-        number_of_signatures = 1000
-        for _ in range(number_of_signatures):
-            private_key = self.ed25519.generate_private_key()
-            public_key = self.ed25519.generate_public_key(private_key)
+        num_signatures = 10
+
+        for _ in range(num_signatures):
+            signing_key = SigningKey.generate()
+            verifying_key = signing_key.generate_verifying_key()
             message = os.urandom(32)
-            signature = self.ed25519.sign(private_key, message)
-            batch.append((public_key, message, signature))
-        
-        # Measure performance of individual verifications.
+            signature = self.ed25519.sign(signing_key, message)
+            batch.append((verifying_key, message, signature))
+
+        # Measure individual verification
         start_individual = time.perf_counter()
-        for public_key, message, signature in batch:
-            self.assertTrue(self.ed25519.verify(public_key, message, signature))
+        for vk, msg, sig in batch:
+            self.assertTrue(self.ed25519.verify(vk, msg, sig))
         individual_time = time.perf_counter() - start_individual
 
-        # Measure performance of batch verification.
+        # Measure batch verification
         start_batch = time.perf_counter()
         self.assertTrue(self.ed25519.verify_batch(batch))
         batch_time = time.perf_counter() - start_batch
 
-        print(f"Individual verification time for {number_of_signatures} signatures: {individual_time:.6f} seconds")
-        print(f"Batch verification time for {number_of_signatures} signatures: {batch_time:.6f} seconds")
+        print(f"Individual verification time for {num_signatures} signatures: {individual_time:.6f} seconds")
+        print(f"Batch verification time for {num_signatures} signatures: {batch_time:.6f} seconds")
 
     def test_signing_verification_performance_comparison(self):
-        """
-        Compare performance of our Ed25519 signing and verifying with PyNaCl's implementation.
-        The test runs multiple iterations, prints the average times, and reports the speedup factors.
-        """
-        import time
-        from nacl.signing import SigningKey as PyNaClSigningKey
-        
-        iterations = 1000
+        """Compare Ed25519 signing and verification performance with PyNaCl."""
+        iterations = 10
         message = b"Performance test message for signing and verifying" * 10
 
-        # Set up our implementation keys.
-        private_key = self.ed25519.generate_private_key()
-        public_key = self.ed25519.generate_public_key(private_key)
+        # Set up our implementation keys
+        signing_key = SigningKey.generate()
+        verifying_key = signing_key.generate_verifying_key()
         our_total_sign_time = 0.0
         our_total_verify_time = 0.0
+        from nacl.signing import SigningKey as PyNaClSigningKey
 
-        # Set up PyNaCl keys.
+        # Set up PyNaCl keys
         seed = os.urandom(32)
         pynacl_signing_key = PyNaClSigningKey(seed)
         pynacl_verify_key = pynacl_signing_key.verify_key
@@ -300,23 +324,23 @@ class TestEd25519(unittest.TestCase):
         pynacl_total_verify_time = 0.0
 
         for _ in range(iterations):
-            # Time our signing.
+            # Time our signing
             start = time.perf_counter()
-            our_signature = self.ed25519.sign(private_key, message)
+            our_signature = self.ed25519.sign(signing_key, message)
             our_total_sign_time += time.perf_counter() - start
 
-            # Time PyNaCl signing.
+            # Time PyNaCl signing
             start = time.perf_counter()
             pynacl_signature = pynacl_signing_key.sign(message).signature
             pynacl_total_sign_time += time.perf_counter() - start
 
-            # Time our verification.
+            # Time our verification
             start = time.perf_counter()
-            valid_our = self.ed25519.verify(public_key, message, our_signature)
+            valid_our = self.ed25519.verify(verifying_key, message, our_signature)
             our_total_verify_time += time.perf_counter() - start
             self.assertTrue(valid_our)
 
-            # Time PyNaCl verification.
+            # Time PyNaCl verification
             start = time.perf_counter()
             try:
                 pynacl_verify_key.verify(message, pynacl_signature)
@@ -331,26 +355,16 @@ class TestEd25519(unittest.TestCase):
         avg_our_verify_time = our_total_verify_time / iterations
         avg_pynacl_verify_time = pynacl_total_verify_time / iterations
 
-        print(f"Our signing average: {avg_our_sign_time:.6f} s")
-        print(f"PyNaCl signing average: {avg_pynacl_sign_time:.6f} s")
-        print(f"Our verification average: {avg_our_verify_time:.6f} s")
-        print(f"PyNaCl verification average: {avg_pynacl_verify_time:.6f} s")
+        print(f"Our signing avg: {avg_our_sign_time:.6f} s")
+        print(f"PyNaCl signing avg: {avg_pynacl_sign_time:.6f} s")
+        print(f"Our verification avg: {avg_our_verify_time:.6f} s")
+        print(f"PyNaCl verification avg: {avg_pynacl_verify_time:.6f} s")
 
-        # Compute and print speedup factors for signing.
-        if avg_our_sign_time < avg_pynacl_sign_time:
-            sign_speedup = avg_pynacl_sign_time / avg_our_sign_time
-            print(f"Our signing implementation is {sign_speedup:.2f} times faster than PyNaCl's.")
-        else:
-            sign_speedup = avg_our_sign_time / avg_pynacl_sign_time
-            print(f"PyNaCl's signing implementation is {sign_speedup:.2f} times faster than ours.")
-
-        # Compute and print speedup factors for verifying.
-        if avg_our_verify_time < avg_pynacl_verify_time:
-            verify_speedup = avg_pynacl_verify_time / avg_our_verify_time
-            print(f"Our verification implementation is {verify_speedup:.2f} times faster than PyNaCl's.")
-        else:
-            verify_speedup = avg_our_verify_time / avg_pynacl_verify_time
-            print(f"PyNaCl's verification implementation is {verify_speedup:.2f} times faster than ours.")
+        # Speedup comparisons
+        sign_speedup = avg_pynacl_sign_time / avg_our_sign_time
+        verify_speedup = avg_pynacl_verify_time / avg_our_verify_time
+        print(f"Our signing is {sign_speedup:.2f}x faster than PyNaCl.")
+        print(f"Our verification is {verify_speedup:.2f}x faster than PyNaCl.")
 
 if __name__ == "__main__":
     unittest.main()

@@ -29,6 +29,55 @@ B = (
     46316835694926478169428394003475163141307993866256225615783033603165251855960,
 )
 
+class SigningKey:
+    """A wrapper for Ed25519 signing keys (private keys)."""
+
+    def __init__(self, key_bytes: bytes):
+        if len(key_bytes) != 32:
+            raise ValueError("Signing key must be 32 bytes long.")
+        self._key_bytes = key_bytes
+
+    def to_bytes(self) -> bytes:
+        """Returns the signing key as 32 bytes."""
+        return self._key_bytes
+
+    def generate_verifying_key(self) -> "VerifyingKey":
+        """Generates the corresponding Ed25519 verifying key."""
+        verifying_key_bytes = compute_public_key(self._key_bytes)
+        return VerifyingKey(verifying_key_bytes)
+
+    @staticmethod
+    def generate() -> "SigningKey":
+        """Generates a new random Ed25519 signing key."""
+        return SigningKey(os.urandom(32))
+
+    @staticmethod
+    def from_bytes(data: bytes) -> "SigningKey":
+        """Creates a signing key from a 32-byte representation."""
+        if len(data) != 32:
+            raise ValueError("Signing key must be exactly 32 bytes long.")
+        return SigningKey(data)
+
+
+class VerifyingKey:
+    """A wrapper for Ed25519 verifying keys (public keys)."""
+
+    def __init__(self, key_bytes: bytes):
+        if len(key_bytes) != 32:
+            raise ValueError("Verifying key must be 32 bytes long.")
+        self._key_bytes = key_bytes
+
+    def to_bytes(self) -> bytes:
+        """Returns the verifying key as 32 bytes."""
+        return self._key_bytes
+
+    @staticmethod
+    def from_bytes(data: bytes) -> "VerifyingKey":
+        """Creates a verifying key from a 32-byte representation."""
+        if len(data) != 32:
+            raise ValueError("Verifying key must be exactly 32 bytes long.")
+        return VerifyingKey(data)
+
 
 class Ed25519:
     """
@@ -41,17 +90,8 @@ class Ed25519:
         self.L = L
         self.B = affine_to_extended(B) 
 
-    def generate_private_key(self) -> bytes:
-        """Generate a random 32-byte private key."""
-        return os.urandom(32)
 
-    def generate_public_key(self, private_key: bytes) -> bytes:
-        """
-        Generate the public key from a 32-byte private key.
-        """
-        return compute_public_key(private_key)
-
-    def sign(self, private_key: bytes, message: bytes) -> bytes:
+    def sign(self, signing_key: SigningKey, message: bytes) -> bytes:
         """
         Sign a message using Ed25519:
         
@@ -66,8 +106,8 @@ class Ed25519:
             
         """
         # Step 1 - 3 are handled by secret_expand and compute_public_key
-        a, prefix = secret_expand(private_key)
-        A_enc = compute_public_key(private_key)
+        a, prefix = secret_expand(signing_key.to_bytes())
+        A_enc = signing_key.generate_verifying_key().to_bytes()
         
         # Step 4
         r = int.from_bytes(sha512(prefix + message), "little") % self.L
@@ -86,7 +126,7 @@ class Ed25519:
         
         return R_enc + S_enc
 
-    def verify(self, public_key: bytes, message: bytes, signature: bytes) -> bool:
+    def verify(self, verifying_key: VerifyingKey, message: bytes, signature: bytes) -> bool:
         """
         Verify an Ed25519 signature:
         
@@ -109,12 +149,12 @@ class Ed25519:
         try:
             # Step 2
             R_point = decode_edwards_point(R_enc)
-            A_point = decode_edwards_point(public_key)
+            A_point = decode_edwards_point(verifying_key.to_bytes())
         except Exception:
             return False
 
         # Step 3
-        k = int.from_bytes(sha512(R_enc + public_key + message), "little") % self.L
+        k = int.from_bytes(sha512(R_enc + verifying_key.to_bytes() + message), "little") % self.L
         
         # Compute sB and kA.
         sB = edwards_scalar_mult(s_int, self.B)
@@ -179,12 +219,12 @@ class Ed25519:
             # Decode R and A.
             try:
                 R_point = decode_edwards_point(R_enc)
-                A_point = decode_edwards_point(public_key)
+                A_point = decode_edwards_point(public_key.to_bytes())
             except Exception:
                 return False
             
             # Compute challenge: k = H(R || public_key || message) mod L.
-            k = int.from_bytes(sha512(R_enc + public_key + message), "little") % self.L
+            k = int.from_bytes(sha512(R_enc + public_key.to_bytes() + message), "little") % self.L
             
             # Choose a random scalar z for this signature (nonzero modulo L).
             z = int.from_bytes(os.urandom(32), "little") % self.L
