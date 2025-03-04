@@ -1,0 +1,408 @@
+\documentclass[twoside,a4paper,12pt]{article}
+\hfuzz=5pt
+\usepackage{textcomp} % Additional symbols and better font compatibility
+
+% Packages
+\usepackage[a4paper,margin=1in]{geometry} % A4 layout
+
+\usepackage{amsmath,amsfonts,amssymb} % For math formatting
+\usepackage{minted} % For syntax highlighting
+\usepackage{titlesec} % For custom section formatting
+\usepackage{xcolor} % For color definitions
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\usepackage{newunicodechar}
+\definecolor{myDarkBlue}{HTML}{0b077d}
+\definecolor{emerald}{HTML}{005945}
+\usepackage[hidelinks, colorlinks=true, citecolor=emerald, urlcolor=myDarkBlue, linkcolor=emerald, linktoc=all]{hyperref}
+\renewcommand{\chapterautorefname}{Chapter}
+\renewcommand{\sectionautorefname}{Section}
+\renewcommand{\figureautorefname}{Figure}
+\renewcommand{\subsectionautorefname}{Section}
+
+
+\usepackage[style=nature, maxbibnames=3, doi=false, url=false, isbn=false, hyperref=true, backref=true, natbib=true, labelnumber]{biblatex}
+\DefineBibliographyStrings{english}{%
+    backrefpage = {Page},% originally "cited on page"
+    backrefpages = {Pages},% originally "cited on pages"
+}
+\addbibresource{bib.bib} % Replace with your .bib file
+\renewcommand\bfdefault{b}  % Ensure bold text
+\renewcommand\itdefault{it} % Ensure italic text
+
+\fvset{fontfamily=tt}
+\newcommand{\setmonofontblock}{\setmonofont{LigaSFMonoNerdFont-SemiBold}}
+\newcommand{\resetmonofont}{\setmonofont{Latin Modern Mono}}
+\setmonofont{Latin Modern Mono}
+
+% Title formatting
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\usepackage{fancyhdr} % For custom headers and footers
+\pagestyle{fancy}
+
+% Clear all default header and footer fields
+\fancyhf{}
+
+% Footer with page numbering
+\fancyfoot[C]{Page \textbf{\thepage} of \textbf{\hypersetup{linkcolor=black}\pageref{LastPage}\hypersetup{linkcolor=emerald}}}
+
+% Conditional header for "faa42"
+\fancyhead[LE,RO]{\textsl{faa42}} % Left on odd pages, right on even pages
+\fancyhead[LO,RE]{}      % Clear conflicting fields
+\fancypagestyle{plain}{  % Define style for the first page
+  \fancyhf{}             % Clear headers and footers
+  \renewcommand{\headrulewidth}{0pt} % Remove header line
+}
+\renewcommand{\headrulewidth}{0.4pt} % Add header rule for other pages
+\setlength{\headheight}{14.5pt} % Adjust the header height
+\addtolength{\topmargin}{-2.5pt} % Compensate for the increased header height
+
+% Extra package to determine total page count
+\usepackage{lastpage}
+
+
+% Document Title Page
+\title{\textbf{Cryptography and Protocol Engineering (P79)\\ Assignment 1}}
+\author{Firas Aleem \textsl{(faa42)}}
+\date{Lent 2024 \\\vspace{0.5cm} {\small Word Count: 1,989}}
+
+\begin{document}
+%TC:ignore
+
+% Title Page
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\newcommand{\smalltt}[1]{\texttt{\small #1}}
+
+%TC:endignore
+
+% Main Content Heading
+% --- 1. INTRODUCTION ---
+\section{Assignment 1: Curve25519 Diffie-Hellman and Ed25519 Signatures}
+\label{sec:introduction}
+X25519 and Ed25519 are widely used cryptographic primitives based on elliptic curve cryptography (ECC). X25519 is primarily used for key exchange in secure communication protocols such as TLS and Signal, while Ed25519 is a digital signature scheme designed for cryptographic signing. Both rely on finite field arithmetic and use the Curve25519 structure to ensure strong cryptographic properties.
+
+This report explores my implementation of {X25519 and Ed25519}, focusing on {design decisions, correctness, and performance}. 
+
+\begin{itemize}
+    \item \textbf{\autoref{sec:x25519}:} Covers {X25519}, including key exchange, scalar multiplication strategies, and testing.
+    \item \textbf{\autoref{sec:ed25519}:} Discusses {Ed25519}, detailing signature generation, encoding constraints, and batch verification.
+    \item \textbf{\autoref{sec:analysis}:} Examines findings, performance trade-offs, and optimizations for production readiness.
+\end{itemize}
+
+The report also compares performance against \textit{PyNaCl} \cite{PyNaCl}, highlighting areas for improvement.
+
+% --- 2. TASK 1: X25519 IMPLEMENTATION ---
+\section{X25519: Implementation and Testing}
+\label{sec:x25519}
+
+\subsection{Overview and API Design}
+
+To implement X25519, I designed a wrapper class, \texttt{X25519}, which allows the user to choose between two different methods for scalar multiplication: the Montgomery ladder and the double-and-add algorithm. This approach provides several advantages:
+\begin{itemize}
+    \item \textbf{Modularity:} If additional scalar multiplication methods are required, they can be added as new options in the wrapper without affecting the existing implementations.
+    \item \textbf{Encapsulation:} The details of whether Montgomery ladder or double-and-add is used are abstracted away from the user, who calls \texttt{scalar\_multiply}, with either \texttt{ladder} or \texttt{double-and-add} as an argument.
+    \item \textbf{Code Maintainability:} Since both implementations are separate, changes to one do not affect the other, ensuring cleaner and more maintainable code.
+    \item \textbf{Shared Functionality:} Common operations, such as private key clamping and key generation, are handled at the wrapper level, reducing redundancy.
+\end{itemize}
+
+The \texttt{X25519} class exposes a method \texttt{scalar\_multiply}, which internally selects the appropriate method based on how the instance was initialized. It also provides methods for generating private and public keys, ensuring that both implementations are consistent.
+
+\subsection{Double-and-Add Implementation}
+\label{subsec:x25519_double_add}
+
+The double-and-add algorithm is implemented in the \texttt{MontgomeryDoubleAdd} class. This method follows a standard left-to-right binary approach, where the scalar is iteratively processed, and the point is either doubled or added depending on the least significant bit of the scalar.
+
+\paragraph{Type Considerations:} 
+To keep the implementation straightforward and modular, I used:
+\begin{itemize}
+    \item {\texttt{Point} type:} Defined as a tuple of two integers \texttt{(x, y)}, with \texttt{None} used to represent the point at infinity. 
+    \begin{itemize}
+        \item Using tuples provides a clear and simple representation of elliptic curve points while ensuring immutability.
+        \item The use of \texttt{None} to denote the point at infinity avoids the need for a separate class or special case handling, making operations such as addition and doubling more intuitive.
+        \item This approach follows the common mathematical notation where the point at infinity is treated as a special case.
+    \end{itemize}
+    \item Private and public keys as \texttt{bytes}:
+    \begin{itemize}
+        \item Keeping keys as \texttt{bytes} aligns with how they are represented in cryptographic standards (e.g., RFC 7748).
+        \item This avoids ambiguity when handling different representations (big-endian vs. little-endian integers) and ensures direct compatibility with standard cryptographic libraries.
+        \item The conversion functions for transforming between \texttt{bytes} and integers are centralized in utility functions, ensuring correctness and reducing redundant logic across different implementations.
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Implementation Details:}
+The \texttt{add} and \texttt{double} methods follow the standard Montgomery curve formulas:
+\begin{align}
+    \lambda &= \frac{y_2 - y_1}{x_2 - x_1} \mod p \\
+    x_3 &= \lambda^2 - A - x_1 - x_2 \mod p \\
+    y_3 &= \lambda (x_1 - x_3) - y_1 \mod p
+\end{align}
+
+For point doubling:
+\begin{align}
+    \lambda &= \frac{3x_1^2 + 2Ax_1 + 1}{2y_1} \mod p \\
+    x_3 &= \lambda^2 - A - 2x_1 \mod p \\
+    y_3 &= \lambda (x_1 - x_3) - y_1 \mod p
+\end{align}
+
+The \texttt{scalar\_multiply} function iterates through the bits of the scalar, applying doubling at each step and adding when the corresponding bit is set. I implemented these according to the standard formulas which were found in the lecture notes \cite{P79LectureNotes}, as well as the Explicit-Formulas Database \cite{hyperellipticEFDMG}.
+
+\subsection{Montgomery Ladder Implementation}
+\label{subsec:x25519_montgomery_ladder}
+
+The Montgomery ladder is implemented in the \texttt{MontgomeryLadder} class. Unlike the double-and-add method, the Montgomery ladder operates entirely in \textit{projective coordinates}. This was implemented using RFC
+7748 \cite{rfc7748} and Martin's Curve25519 tutorial \cite{Kleppmann2020}.
+\paragraph{Affine and Projective Coordinates:} The ladder method maintains two projective points, \texttt{(x2, z2)} and \texttt{(x3, z3)}, and iterates over the scalar bits using a structured ladder step function:
+\begin{align}
+    A &= (x_2 + z_2)^2 \mod p \\
+    B &= (x_2 - z_2)^2 \mod p \\
+    E &= A - B \mod p \\
+    C &= (x_3 + z_3) (x_2 - z_2) \mod p \\
+    D &= (x_3 - z_3) (x_2 + z_2) \mod p
+\end{align}
+
+At each iteration, the points are swapped conditionally using a \textit{constant-time swap function} to avoid branching-based timing leaks.
+
+\paragraph{Implementation Design Choices:}
+\begin{itemize}
+    \item \textbf{Type Usage:} The \texttt{Point} type is still a tuple, but in this case, \texttt{y} is always \texttt{None}, as X25519 only operates on the x-coordinate.
+    \item \textbf{Step Function for Clarity:} The ladder step function is extracted into a separate method for readability and modularity.
+    \item \textbf{Constant-Time Execution:} The \texttt{constant\_swap} function is used to prevent side-channel attacks.
+\end{itemize}
+
+\subsection{Utility Functions and Modularity}
+\label{subsec:x25519_utils}
+
+To maintain a clean and modular structure, I implemented a separate utilities file, which contains:
+\begin{itemize}
+    \item \textbf{Mathematical functions}: Multiplicative inverse, field addition, multiplication, and square root modulo \( p \).
+    \item \textbf{Byte-integer conversions}: Conversions between byte representations and integer values.
+    \item \textbf{y-coordinate calculation}: Required for the double-and-add implementation.
+\end{itemize}
+By centralizing these operations, I ensured that both scalar multiplication methods (and later the Ed25519 class) could use them without redundancy. Additionally, this approach simplifies testing and debugging, as the utility functions can be independently tested and if needed, could be replaced with optimized versions.
+
+\subsection{Testing and Debugging}
+\label{subsec:x25519_testing}
+
+To ensure correctness and robustness, I implemented a comprehensive test suite covering:
+\begin{itemize}
+    \item Unit tests for individual scalar multiplication implementations (Montgomery Ladder and Double-and-Add).
+    \item {Validation against RFC 7748 test vectors} to ensure compliance with standards.
+    \item {Comparisons against PyNaCl} to verify correctness.
+    \item {Performance benchmarking} to compare execution times.
+    \item {ECDH shared secret validation} to ensure interoperability.
+\end{itemize}
+
+\subsubsection{Unit Testing}
+
+I tested the Montgomery Ladder and Double-and-Add implementations separately to verify core operations.
+
+\paragraph{Montgomery Double-and-Add:}
+\begin{itemize}
+    \item Addition and doubling were verified to ensure correct behavior, including handling edge cases like identity elements and inverses.
+    \item Scalar multiplication was tested to confirm that the resulting point was still on the curve.
+\end{itemize}
+
+\paragraph{Montgomery Ladder:}
+\begin{itemize}
+    \item Scalar multiplication was tested against known values and verified for correctness.
+    \item Tested scalar multiplication using large values and compared results with PyNaCl.
+\end{itemize}
+
+\subsubsection{Validation Against RFC 7748 and PyNaCl}
+
+I validated my implementation using RFC 7748 test vectors:
+\begin{itemize}
+    \item \textbf{Vector 1} passed for both implementations.
+    \item \textbf{Vector 2} failed for the Double-and-Add method, as expected, because it requires computing a square root, and \( A \) is not a quadratic residue modulo \( p \). This behavior is consistent with expectations, as the Montgomery Ladder should succeed while Double-and-Add fails.
+
+\end{itemize}
+
+To further verify correctness, I compared my implementation with PyNaCl:
+\begin{itemize}
+    \item {Scalar multiplication outputs} matched PyNaCl results across 100 iterations.
+    \item {Public key generation} was validated against \texttt{crypto\_scalarmult\_base}.
+\end{itemize}
+
+\subsubsection{Elliptic Curve Diffie-Hellman (ECDH) Testing}
+
+Using RFC 7748 test vectors, I verified:
+\begin{itemize}
+    \item Alice and Bob's public keys were correctly generated.
+    \item Shared secret computations were consistent and non-zero.
+\end{itemize}
+
+\subsubsection{Performance Benchmarking}
+
+I measured execution times to compare efficiency, averaged over 100 iterations:
+
+\paragraph{Montgomery Ladder vs. Double-and-Add:}
+\begin{itemize}
+    \item \textbf{Montgomery Ladder}: \( 0.00150 \) s
+    \item \textbf{Double-and-Add}: \( 0.05100 \) s
+    \item \textbf{Speedup}: Ladder is around \textbf{36x} faster.
+\end{itemize}
+
+\paragraph{My Implementation vs. PyNaCl:}
+\begin{itemize}
+    \item \textbf{My X25519 (Ladder)}: \( 0.00146 \) s
+    \item \textbf{PyNaCl}: \( 0.000124 \) s
+    \item \textbf{Speedup}: PyNaCl is around \textbf{12x} faster than my implementation, as expected for a highly optimized cryptographic library.
+\end{itemize}
+
+\subsection{Summary}
+
+Through unit tests, RFC 7748 validation, PyNaCl comparisons, and performance benchmarking, I confirmed:
+\begin{itemize}
+    \item Correctness of both Montgomery Ladder and Double-and-Add.
+    \item Expected behavior in edge cases.
+    \item ECDH shared secret computations were valid.
+    \item Significant efficiency gains with the Montgomery Ladder method, as expected. Also as expected, the Ladder method was slower than PyNaCl due to PyNaCl's optimized implementation.
+\end{itemize}
+
+% --- 3. TASK 2: ED25519 IMPLEMENTATION ---
+\section{Ed25519: Digital Signature Scheme}
+\label{sec:ed25519}
+
+Ed25519 is a signature scheme based on the Edwards-curve Digital Signature Algorithm (EdDSA). This implementation follows RFC 8032 \cite{rfc8032} and the work of Hisil et al. \cite{revisited}. Since it operates over a twisted Edwards curve, the most efficient approach is to use extended coordinates, first introduced in that paper \cite{revisited}.
+
+\subsection{Coordinate Representation and Utilities}
+To efficiently perform operations, I used:
+\begin{itemize}
+    \item \textbf{Extended coordinates} $(X, Y, Z, T)$ with $Z = 1$ and $T = x \cdot y \mod p$.
+    \item \textbf{Affine-to-extended} and \textbf{extended-to-affine} conversions.
+    \item \textbf{Point encoding/decoding} following RFC 8032, where the y-coordinate is stored and the most significant bit encodes the sign of x.
+\end{itemize}
+
+\subsubsection{Point Addition, Doubling, and Normalization}
+Addition and subtraction follow RFC 8032, using explicit formulas that allow efficient computation. Doubling is optimized separately to reuse intermediate values and improve efficiency. To ensure consistency, all extended points are normalized to $Z = 1$ since multiple representations can exist for the same affine point.
+
+\subsection{Key Generation and Signing Process}
+Key generation and signing follow standard Ed25519 operations:
+
+\begin{itemize}
+    \item \textbf{Private key}: 32 random bytes.
+    \item \textbf{Public key}: Computed by clamping the private key, multiplying it with the base point, and encoding the result.
+    \item \textbf{Signing}:  
+    \begin{enumerate}
+        \item Compute $H = \text{SHA-512}(\text{private key})$, split into lower 32 bytes and prefix.
+        \item Derive the scalar $a$ by clamping the lower 32 bytes.
+        \item Compute public key $A = a \cdot B$.
+        \item Compute nonce $r = \text{SHA-512}(\text{prefix} || \text{message}) \mod L$.
+        \item Compute $R = r \cdot B$ and encode it.
+        \item Compute challenge $k = \text{SHA-512}(\text{encode}(R) || \text{encode}(A) || \text{message}) \mod L$.
+        \item Compute $S = (r + k \cdot a) \mod L$.
+        \item Return signature: $\text{encode}(R) || S$.
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Verification and Batch Verification}
+Signature verification follows RFC 8032, using the co-factored verification equation:
+\[
+[8] S B = [8] R + [8] k A
+\]
+This choice enables batch verification, implemented following Algorithm 3 from Chalkias, Garillot, and Nikolaenko's paper \cite{taming}. Batch verification efficiently checks multiple signatures by accumulating weighted sums of $sB$, $R$, and $kA$, significantly reducing the number of expensive scalar multiplications.
+
+\subsubsection{Canonical Encoding Checks}
+To prevent malleability attacks, the implementation strictly enforces canonical encoding as required by RFC 8032:
+
+\begin{itemize}
+    \item \textbf{Canonical $S$ values}: The integer $S$ must be strictly less than $L$ to ensure uniqueness.
+    \item \textbf{Canonical $R$ values}: The encoded point $R$ must represent a valid curve point, rejecting malformed encodings.
+    \item \textbf{Canonical Public Keys}: The public key must be a valid Ed25519 point and not a non-standard encoding.
+\end{itemize}
+
+Initially, I considered implementing relaxed verification following ZIP215 \cite{ZIP215}, which allows non-canonical $R$ and $A$ values for backward compatibility. However, this approach contradicts both RFC 8032 and the U.S. Government's NIST FIPS 186-5 standard \cite{NIST}, which require strict adherence to canonical encodings. To maintain compliance with these standards and avoid potential signature malleability issues, I opted for enforcing full canonical encoding checks.
+
+
+\subsection{Testing and Performance Analysis}
+The implementation was validated through extensive testing:
+\begin{itemize}
+    \item \textbf{Unit tests} for key generation, encoding/decoding, and signature verification.
+    \item \textbf{RFC 8032 test vectors} were used to verify correctness.
+    \item \textbf{Edge cases}: Invalid signatures, tampered messages, and large messages (up to 16MB) were tested.
+    \item \textbf{Batch verification} was tested for consistency and speed.
+\end{itemize}
+
+\subsubsection{Performance Comparison}
+To evaluate performance, I compared signing and verification times against {PyNaCl}:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{l|c|c|c}
+        \textbf{Operation} & \textbf{Our Time (s)} & \textbf{PyNaCl Time (s)} & \textbf{Speedup} \\
+        \hline
+        Signing (1000 iterations) & 0.00405 & 0.00008 & $\approx$50x \\
+        Verification (1000 iterations) & 0.00451 & 0.00015 & $\approx$30x \\
+    \end{tabular}
+    \caption{Performance comparison with PyNaCl}
+\end{table}
+As expected, PyNaCl outperformed my implementation due to its optimized C backend. What was surprising, however, was the relatively smaller speedup of verification compared to signing. \\
+
+Another comparison was between individual and batch verification. Surprisingly, batch verification was \textit{slower} than individual verification:
+\begin{itemize}
+    \item Individual verification (1000 signatures): 4.69 s
+    \item {Batch verification (1000 signatures)}: 6.16 s
+\end{itemize}
+This was unexpected, as batch verification should be more efficient in larger batches, but the current implementation may require further optimization. A potential optimization could involve using \textit{Multi-Scalar Multiplication (MSM)}, a technique that optimizes the computation of weighted sums of elliptic curve points. Instead of performing separate scalar multiplications for each signature, MSM computes them simultaneously, reducing redundant operations. Efficient MSM techniques, such as \textit{Straus' algorithm} \cite{Straus1964} and \textit{Pippenger's method} \cite{pip}, precompute partial results and use optimized windowing strategies, which can significantly improve performance.
+
+\subsection{Summary}
+The Ed25519 implementation was successfully tested against RFC 8032, edge cases, and performance benchmarks. While batch verification did not yield the expected speed gains, the implementation remains correct and functional.
+
+% --- 4. FINDINGS, PERFORMANCE, AND SECURITY ---
+\section{Findings, Performance, and Analysis}
+\label{sec:analysis}
+
+\subsection{Challenges and Debugging Insights}
+\label{subsec:insights_debug}
+One of the most time-consuming debugging challenges involved RFC 7748 test vector 2. The RFC provides the input \( u \)-coordinate in both hex and base-10, but my Montgomery Ladder implementation failed when using the hex value. After extensive troubleshooting, I traced the issue to missing masked bits in the scalar computation. A rejected errata suggested this mismatch, but it was not immediately obvious. \\
+
+This issue underscores how even a single bitmask omission can cause an implementation to fail with certain edge cases, despite passing other tests. It serves as a reminder that cryptographic implementations are highly susceptible to subtle flaws, and correctness cannot be assumed without extensive testing.
+
+\subsection{Security Considerations}
+\label{subsec:security}
+A key limitation of my implementation is the lack of constant-time execution, making it susceptible to side-channel attacks such as timing analysis. Current arithmetic operations and conditional branching introduce variations in execution time, which could be exploited to extract cryptographic secrets. Additionally, invalid input handling must be hardened to prevent fault-injection attacks that manipulate computations into leaking private information. \\
+
+For production use, these concerns must be addressed by eliminating data-dependent branching and ensuring constant-time modular arithmetic. Libraries like PyNaCl implement these protections, demonstrating why cryptographic implementations require specialized expertise.
+
+\subsection{Production-Readiness: Necessary Improvements}
+While the implementation is functional, several key improvements are necessary for real-world deployment:
+
+\begin{enumerate}
+    \item \textbf{Performance Optimizations:}
+    \begin{itemize}
+        \item Implement {Multi-Scalar Multiplication (MSM)} to speed up batch verification.
+        \item Integrate {precomputed lookup tables} to avoid redundant field arithmetic.
+        \item Use {windowing techniques} in scalar multiplication for efficiency.
+    \end{itemize}
+      
+    \item \textbf{Security Enhancements:}
+    \begin{itemize}
+        \item Ensure {constant-time execution} to prevent timing-based side-channel attacks.
+        \item Replace conditional branching with {bitwise operations} for uniform execution.
+        \item Harden memory access patterns against {cache-based attacks}.
+    \end{itemize}
+
+    \item \textbf{Interoperability and Compliance:}
+    \begin{itemize}
+        \item Validate against additional {test vectors} beyond RFC 8032.
+        \item Ensure compliance with {NIST FIPS 186-5} for standardization.
+    \end{itemize}
+\end{enumerate}
+
+\section{Conclusion}
+This project involved implementing and evaluating X25519 for key exchange and Ed25519 for digital signatures, following RFC 7748 and RFC 8032. The implementation was validated using test vectors, unit tests, and comparisons against PyNaCl. While the system is functionally correct, key optimizations, such as Multi-Scalar Multiplication (MSM) for batch verification and constant-time execution for security, are necessary for real-world deployment. \\
+
+The project highlighted the importance of rigorous testing, as small errors (e.g., missing masked bits) can break cryptographic correctness. Performance benchmarking demonstrated that while this implementation serves an educational purpose, optimized libraries like PyNaCl achieve significantly better performance. Future improvements could focus on further optimizing arithmetic operations and implementing side-channel mitigations. \\
+
+This work reinforces the broader lesson in cryptographic engineering: correctness is non-trivial, and security requires both theoretical rigor and practical validation.
+
+% --- REFERENCES ---
+\newpage
+\printbibliography
+
+\end{document}
