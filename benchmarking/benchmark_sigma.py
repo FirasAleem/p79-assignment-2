@@ -3,9 +3,6 @@ import statistics
 import os
 import base64
 
-# (Assume your implementations of Certificate, CertificateAuthority, SigmaParty,
-# SigmaHandshake, SigmaKeys, and SecureChannel are already defined as in your code.)
-
 from sigma.sigma import CertificateAuthority, SigmaParty, SigmaHandshake, SecureChannel
 from ed25519.ed25519 import SigningKey, VerifyingKey
 from x25519.x25519 import X25519PrivateKey, X25519PublicKey
