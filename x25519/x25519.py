@@ -91,8 +91,8 @@ class X25519PublicKey:
         BASE_X = b'\x09' + b'\x00' * 31  # Base point
         x25519 = X25519()
         BASE_X_KEY = X25519PublicKey(BASE_X)
-        public_key_bytes = x25519.scalar_multiply(private_key, BASE_X_KEY) 
-        return X25519PublicKey(public_key_bytes) 
+        public_key_bytes = x25519.scalar_multiply(private_key, BASE_X_KEY)
+        return X25519PublicKey(public_key_bytes)
 
 
 class X25519PrivateKey:

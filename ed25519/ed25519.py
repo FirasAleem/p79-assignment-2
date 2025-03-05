@@ -44,6 +44,7 @@ class SigningKey:
 
     # This method was removed in order to have a more consistent API with the X25519 Key Classes
     # Instead, Verifying Key has a method "from_signing_key" to generate the verifying key
+    # I left it commented out for reference
     # def generate_verifying_key(self) -> "VerifyingKey":
     #     """Generates the corresponding Ed25519 verifying key."""
     #     verifying_key_bytes = compute_public_key(self._key_bytes)
@@ -78,13 +79,13 @@ class VerifyingKey:
     def to_bytes(self) -> bytes:
         """Returns the verifying key as 32 bytes."""
         return self._key_bytes
-    
+
+    @staticmethod
     def from_signing_key(signing_key: SigningKey) -> "VerifyingKey":
         """Creates a verifying key from a signing key."""
         verifying_key_bytes = compute_public_key(signing_key.to_bytes())
-        return VerifyingKey(verifying_key_bytes)
+        return VerifyingKey(verifying_key_bytes) 
         
-
     def verify(self, message: bytes, signature: bytes) -> bool:
         """Verify a message signature using this verifying key."""
         return self._ed25519.verify(self, message, signature)  # Use Ed25519 to verify
@@ -126,7 +127,6 @@ class Ed25519:
         # Step 1 - 3 are handled by secret_expand and compute_public_key
         a, prefix = secret_expand(signing_key.to_bytes())
         A_enc = VerifyingKey.from_signing_key(signing_key).to_bytes()
-        #A_enc = signing_key.generate_verifying_key().to_bytes()
         
         # Step 4
         r = int.from_bytes(sha512(prefix + message), "little") % self.L

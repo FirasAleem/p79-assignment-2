@@ -1,39 +1,47 @@
-# X25519 & Ed25519 Implementation
+# X25519, Ed25519, SPAKE2 & SIGMA Implementation
 
-This project provides an implementation of X25519 for key exchange and Ed25519 for digital signatures, following **RFC 7748** and **RFC 8032**.
+This project implements **X25519** for key exchange, **Ed25519** for digital signatures, **SIGMA** for authenticated key exchange, and **SPAKE2** for password-authenticated key exchange, following relevant **RFCs**.
 
 ## Features
 
-- **X25519 Key Exchange**: Secure elliptic-curve Diffie-Hellman (ECDH) using Curve25519.
-- **Ed25519 Digital Signatures**: High-performance signing and verification.
+- **X25519 Key Exchange**: Secure elliptic-curve Diffie-Hellman (ECDH) using Curve25519 (**RFC 7748**).
+- **Ed25519 Digital Signatures**: High-performance signing and verification (**RFC 8032**).
 - **Batch Verification**: Efficiently verify multiple Ed25519 signatures.
+- **SIGMA Protocol**: Authenticated key exchange for secure session establishment.
+- **SPAKE2 Protocol**: Password-authenticated key exchange (**RFC 9382**).
 - **Docker Support**: Run the project in a containerized environment.
 
 ## Project Structure
-
 ```
 project_root/
-│── ed25519/
+├── ed25519/
 │   ├── ed25519.py
 │   ├── utils.py
-│── x25519/
+├── x25519/
 │   ├── x25519.py
 │   ├── utils.py
 │   ├── montgomery_ladder.py
 │   ├── montgomery_double_add.py
-│── tests/
+├── sigma/
+│   ├── sigma.py
+├── spake/
+│   ├── spake.py
+├── tests_ass1/
 │   ├── test_ed25519.py
 │   ├── test_montgomery_double_add.py
 │   ├── test_montgomery_ladder.py
 │   ├── test_x25519_ecdh.py
 │   ├── test_x25519_utils.py
 │   ├── test_x25519.py
-│── requirements.txt
-│── README.md
-│── Dockerfile
-│── run_tests.sh
-│── run.sh
-│── .gitignore
+├── tests/
+│   ├── test_spake2.py
+│   ├── test_sigma.py
+│   ├── benchmark_sigma.py
+├── requirements.txt
+├── README.md
+├── Dockerfile
+├── run_tests.sh
+├── run.sh
 ```
 
 ## Installation
@@ -98,6 +106,35 @@ valid = ed25519.verify_batch(batch)
 assert valid
 ```
 
+### SIGMA Authenticated Key Exchange
+```python
+from sigma.sigma import SIGMAInitiator, SIGMAResponder
+
+initiator = SIGMAInitiator()
+responder = SIGMAResponder()
+
+message1 = initiator.start_handshake()
+message2 = responder.respond(message1)
+final_message = initiator.finalize(message2)
+
+print("SIGMA Handshake Completed.")
+```
+
+### SPAKE2 Password-Authenticated Key Exchange 
+```python
+from spake.spake import SPAKE2Party, SpakeHandshake
+
+password = b"securepassword"
+
+alice = SPAKE2Party("Alice", password, use_m=True)
+bob = SPAKE2Party("Bob", password, use_m=False)
+
+handshake = SpakeHandshake(alice, bob)
+shared_secret, transcript = handshake.run_handshake()
+
+print("Shared Secret:", shared_secret.hex())
+```
+
 ## Testing
 
 Run unit tests to verify correctness:
@@ -109,13 +146,23 @@ Run unit tests to verify correctness:
 Or manually run tests:
 
 ```bash
-python3 -m unittest discover -v -s tests
+python3 -m pytest tests/
 ```
+
+### Performance Benchmarking
+
+To measure the execution time of the SIGMA protocol, run:
+
+```bash
+python3 tests/benchmark_sigma.py
+```
+
+This script runs multiple iterations of the SIGMA handshake and reports the average time per run.
 
 ## Compliance
 
 - **X25519** follows **RFC 7748**.
 - **Ed25519** follows **RFC 8032**.
-- **Batch verification** is implemented based on **Algorithm 3 from**  
-[  *Taming the Many EdDSAs*](https://link.springer.com/chapter/10.1007/978-3-030-64357-7_4#Tab6) (Hülsing et al., 2021).  
-
+- **Batch verification** is implemented based on **Algorithm 3 from**  [  *Taming the Many EdDSAs*](https://link.springer.com/chapter/10.1007/978-3-030-64357-7_4#Tab6) (Hülsing et al., 2021).  
+- **SIGMA** is implemented based on the protocol from **Section 5.1** from [*SIGMA: The 'SIGn-and-MAc' Approach to Authenticated Diffie-Hellman and Its Use in the IKE-Protocols*](https://dx.doi.org/10.1007/978-3-540-45146-4_24) (Krawczyk, 2003).
+- **SPAKE2** follows **RFC 9382**

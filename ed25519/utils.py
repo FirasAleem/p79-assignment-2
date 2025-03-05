@@ -235,3 +235,18 @@ def is_identity(P: tuple[int, int, int, int]) -> bool:
     # and the identity (neutral element) is (0, 1, 1, 0)
     norm = normalize_extended(P)
     return norm == (0, 1, 1, 0)
+
+# Added, was not in previous Assignment
+def is_valid_edwards_point(Point: tuple[int, int, int, int]) -> bool:
+    """
+    Validates that the given point (in extended coordinates) is in the prime-order subgroup
+    of the curve. One common check is to compute L * point and ensure that the result is the identity.
+    """
+    # Compute L * point (where L is the subgroup order)
+    result = edwards_scalar_mult(L, Point)
+    
+    # Define the identity in extended coordinates.
+    identity = (0, 1, 1, 0) 
+    
+    # Normalize both results and compare.
+    return normalize_extended(result) == normalize_extended(identity)

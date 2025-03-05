@@ -6,7 +6,7 @@ import base64
 # (Assume your implementations of Certificate, CertificateAuthority, SigmaParty,
 # SigmaHandshake, SigmaKeys, and SecureChannel are already defined as in your code.)
 
-from sigma import CertificateAuthority, SigmaParty, SigmaHandshake, SecureChannel
+from sigma.sigma import CertificateAuthority, SigmaParty, SigmaHandshake, SecureChannel
 from ed25519.ed25519 import SigningKey, VerifyingKey
 from x25519.x25519 import X25519PrivateKey, X25519PublicKey
 
@@ -105,7 +105,7 @@ def benchmark_secure_channel(num_iter: int = 1000, warmup: int = 100) -> None:
 
 def benchmark_signature(num_iter: int = 10000):
     sk = SigningKey.generate()
-    vk = sk.generate_verifying_key()
+    vk = VerifyingKey.from_signing_key(sk)
     message = b"Benchmarking Ed25519 signatures"
 
     start = time.perf_counter()
@@ -155,7 +155,7 @@ def benchmark_message_size_effect():
 
 def benchmark_ed25519_signing_verification(num_iter=10000):
     sk = SigningKey.generate()
-    vk = sk.generate_verifying_key()
+    vk = VerifyingKey.from_signing_key(sk)
     message = b"Benchmarking Ed25519"
 
     start = time.perf_counter()
