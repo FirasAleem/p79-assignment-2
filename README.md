@@ -63,23 +63,21 @@ Build and run the container:
 
 ### X25519 Key Exchange
 ```python
-from x25519 import X25519
+from x25519 import X25519PrivateKey, X25519PublicKey
 
-x25519 = X25519()
-private_key = x25519.generate_private_key()
-public_key = x25519.generate_public_key(private_key)
+private_key = X25519PrivateKey.generate()
+public_key = X25519PublicKey.from_private_key(private_key)
 
 # Perform ECDH key exchange
-shared_secret = x25519.scalar_multiply(private_key, public_key)
+shared_secret = private_key.exchange(public_key)
 ```
 
 ### Ed25519 Signing and Verification
 ```python
-from ed25519 import Ed25519
+from ed25519 import SigningKey, VerifyingKey
 
-ed25519 = Ed25519()
-private_key = ed25519.generate_private_key()
-public_key = ed25519.generate_public_key(private_key)
+private_key = SigningKey.generate()
+public_key = SigningKey.generate_verifying_key(private_key)
 
 message = b"Hello, world!"
 signature = ed25519.sign(private_key, message)

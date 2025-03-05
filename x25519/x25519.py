@@ -50,7 +50,9 @@ class X25519:
         
         scalar = bytes_to_int(private_key.to_bytes())
         u = bytes_to_int(public_key.to_bytes())
-        
+        if u is None:
+            raise ValueError("u cannot be None")
+
         if self.method == 'ladder':
             ladder = MontgomeryLadder(p=P)
             result_x, _ = ladder.scalar_multiply(scalar, (u, None))
@@ -88,12 +90,13 @@ class X25519PublicKey:
         """Generates the public key corresponding to a given private key."""
         BASE_X = b'\x09' + b'\x00' * 31  # Base point
         x25519 = X25519()
-        public_key_bytes = x25519.scalar_multiply(private_key, BASE_X) 
+        BASE_X_KEY = X25519PublicKey(BASE_X)
+        public_key_bytes = x25519.scalar_multiply(private_key, BASE_X_KEY) 
         return X25519PublicKey(public_key_bytes) 
 
 
 class X25519PrivateKey:
-    """A wrapper for X25519 private keys with safety mechanisms."""
+    """A wrapper for X25519 private keys with an additional method for ECDH."""
     
     def __init__(self, key_bytes: bytes):
         if len(key_bytes) != 32:
@@ -118,3 +121,19 @@ class X25519PrivateKey:
         random_bytes = os.urandom(32)
         clamped_scalar = clamp_scalar(random_bytes)  # Properly clamp before storing
         return X25519PrivateKey(int_to_bytes(clamped_scalar))  # Store as bytes
+    
+    def exchange(self, peer_public_key: "X25519PublicKey") -> bytes:
+        """
+        Perform X25519 Diffie-Hellman key exchange.
+
+        Args:
+            peer_public_key (X25519PublicKey): The public key of the other party.
+
+        Returns:
+            bytes: The 32-byte shared secret.
+        """
+        if not isinstance(peer_public_key, X25519PublicKey):
+            raise TypeError("Expected an X25519PublicKey instance.")
+        
+        x25519 = X25519()
+        return x25519.scalar_multiply(self, peer_public_key)  # Returns raw shared secret

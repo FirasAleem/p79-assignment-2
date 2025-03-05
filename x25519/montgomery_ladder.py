@@ -38,8 +38,11 @@ class MontgomeryLadder:
         Returns:
             A Point (x, None) where x is the resulting affine x-coordinate.
         """
+        if P is None:
+            raise ValueError("Expected a tuple (x, y), but got None")
         if scalar == 0:
             return P
+
 
         p = self.p
         a24 = self.a24
