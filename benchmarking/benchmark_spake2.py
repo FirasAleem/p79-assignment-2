@@ -51,29 +51,29 @@ def profile_function(func, output_file):
 
     print(f"Profiling results saved: {profile_path} & {txt_output_path}")
 
-def setup_spake2():
+def setup_SPAKE2():
     alice = SPAKE2Party("Alice", PASSWORD, use_m=True)
     bob = SPAKE2Party("Bob", PASSWORD, use_m=False)
     return SPAKE2Handshake(alice, bob)
 
-def run_spake2_handshake():
-    handshake = setup_spake2()
+def run_SPAKE2_handshake():
+    handshake = setup_SPAKE2()
     return handshake.run_handshake()
 
 
-def benchmark_spake2_handshake(num_iter=100, warmup=10):
+def benchmark_SPAKE2_handshake(num_iter=100, warmup=10):
     """
     Benchmarks the SPAKE2 handshake execution time.
     """
     # Warm-up phase
     for _ in range(warmup):
-        run_spake2_handshake()
+        run_SPAKE2_handshake()
 
     # Benchmarking
-    times = timeit.repeat(run_spake2_handshake, repeat=5, number=num_iter)
+    times = timeit.repeat(run_SPAKE2_handshake, repeat=5, number=num_iter)
     print_results("SPAKE2 Handshake", times, num_iter)
 
-def benchmark_spake2_key_exchange(num_iter=1000):
+def benchmark_SPAKE2_key_exchange(num_iter=1000):
     """
     Benchmarks SPAKE2 key exchange (shared secret computation).
     """
@@ -84,18 +84,17 @@ def benchmark_spake2_key_exchange(num_iter=1000):
     times = timeit.repeat(lambda: alice.compute_shared_secret(), repeat=5, number=num_iter)
     print_results("SPAKE2 Key Exchange", times, num_iter)
 
-
 def setup_secure_channel():
     """
     Sets up a SecureChannel by deriving keys from the SPAKE2 handshake.
     """
-    handshake = setup_spake2()
+    handshake = setup_SPAKE2()
     shared_secret, _ = handshake.run_handshake()
 
     # Derive session & MAC keys
-    kdf = HKDF(algorithm=hashes.SHA256(), length=64, salt=None, info=b"SecureChannel")
+    kdf = HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=b"SecureChannel")
     derived_keys = kdf.derive(shared_secret)
-    session_key, mac_key = derived_keys[:32], derived_keys[32:]
+    session_key = derived_keys
 
     return SecureChannel(session_key)
 
@@ -116,28 +115,17 @@ def benchmark_secure_channel(num_iter=1000, warmup=100):
 
 def main_benchmarks():
     print("\nRunning SPAKE2 handshake benchmark...")
-    benchmark_spake2_handshake(num_iter=100, warmup=5)
+    benchmark_SPAKE2_handshake(num_iter=100, warmup=5)
 
     print("\nRunning SPAKE2 key exchange benchmark...")
-    benchmark_spake2_key_exchange(num_iter=1000)
+    benchmark_SPAKE2_key_exchange(num_iter=1000)
 
-    print("\nRunning Secure Channel benchmark...")
+    print("\nRunning Secure Channel benchmark (encryption and decryption)...")
     benchmark_secure_channel(num_iter=1000, warmup=50)
 
     # Profiling
     print("\nProfiling SPAKE2 handshake...")
-    profile_function(run_spake2_handshake, "spake2_handshake")
-
-    print("\nProfiling SPAKE2 key exchange...")
-    alice = SPAKE2Party("Alice", PASSWORD, use_m=True)
-    bob = SPAKE2Party("Bob", PASSWORD, use_m=False)
-    alice.receive_peer_message(bob.pi, "Bob")
-    profile_function(lambda: alice.compute_shared_secret(), "spake2_key_exchange")
-
-    print("\nProfiling Secure Channel (AES-GCM)...")
-    channel = setup_secure_channel()
-    message = b"Performance test message for secure channel."
-    profile_function(lambda: channel.receive_message(channel.send_message(message)), "secure_channel")
+    profile_function(run_SPAKE2_handshake, "SPAKE2_handshake")
 
 if __name__ == "__main__":
     main_benchmarks()

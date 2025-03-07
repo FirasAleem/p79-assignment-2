@@ -26,6 +26,62 @@ b64d = base64.b64decode
 # The SecureChannel class provides a secure messaging channel using AES-GCM for encryption and HMAC-SHA256 for authentication.
 
 
+# The following methods are used to compute HMAC-SHA256 and compare HMAC tags in constant time.
+# They are used in various places in the code, and I used one implementation to ensure consistency.
+def compute_hmac(key: bytes, data: bytes) -> bytes:
+    """
+    Compute HMAC-SHA256 over data using key.
+
+    Args:
+        key (bytes): The HMAC key.
+        data (bytes): The message to authenticate.
+
+    Returns:
+        bytes: The raw HMAC tag.
+    """
+    h = hmac.HMAC(key, hashes.SHA256()) 
+    h.update(data)
+    return h.finalize()
+
+
+def hmac_compare(tag1: bytes, tag2: bytes) -> bool:
+    """
+    Constant-time comparison of two HMAC tags.
+
+    Args:
+        tag1 (bytes): First HMAC tag.
+        tag2 (bytes): Second HMAC tag.
+
+    Returns:
+        bool: True if tags match, False otherwise.
+    """
+    return compare_digest(tag1, tag2)
+
+# This method is commented out because even though in *theory* it is constant time, 
+# in practice it is not. See: https://securitypitfalls.wordpress.com/2018/08/03/constant-time-compare-in-python/
+# Hence I used the hmac.compare_digest method instead as recommended by the post.
+# The goal isn’t to make the entire implenmentation constant time, but for easy to implement parts like this, I might as well use the constant time method.
+# The method is kept here for reference:
+# def hmac_compare(tag1: bytes, tag2: bytes) -> bool:
+#     """
+#     Constant-time comparison of two HMAC tags to mitigate timing attacks.
+
+#     Args:
+#         tag1 (bytes): First HMAC tag.
+#         tag2 (bytes): Second HMAC tag.
+
+#     Returns:
+#         bool: True if tags match, False otherwise.
+#     """
+#     if len(tag1) != len(tag2):
+#         return False
+#     diff = 0
+#     for x, y in zip(tag1, tag2):
+#         diff |= x ^ y
+#     return diff == 0
+
+
+
 class SigmaParty:
     """
     Represents a party (Alice or Bob) in the SIGMA protocol. Each party has:
@@ -97,62 +153,6 @@ class SigmaParty:
         """
         assert self._x25519_private is not None
         return self._x25519_private.exchange(peer_public_key)
-
-def compute_hmac(key: bytes, data: bytes) -> bytes:
-    """
-    Compute HMAC-SHA256 over data using key.
-
-    Args:
-        key (bytes): The HMAC key.
-        data (bytes): The message to authenticate.
-
-    Returns:
-        bytes: The raw HMAC tag.
-    """
-    h = hmac.HMAC(key, hashes.SHA256()) 
-    h.update(data)
-    return h.finalize()
-
-
-def hmac_compare(tag1: bytes, tag2: bytes) -> bool:
-    """
-    Constant-time comparison of two HMAC tags.
-
-    Args:
-        tag1 (bytes): First HMAC tag.
-        tag2 (bytes): Second HMAC tag.
-
-    Returns:
-        bool: True if tags match, False otherwise.
-    """
-    if len(tag1) != len(tag2):  # Early rejection
-        return False
-
-    return compare_digest(tag1, tag2)
-
-# This method is commented out because even though in theory it is constant time, 
-# in practice it is not. See: https://securitypitfalls.wordpress.com/2018/08/03/constant-time-compare-in-python/
-# Hence I used the hmac.compare_digest method instead as recommended by the post.
-# The goal isn’t to make the entire implenmentation constant time, but for easy to implement parts like this, I might as well use the constant time method.
-# The method is kept here for reference:
-# def hmac_compare(tag1: bytes, tag2: bytes) -> bool:
-#     """
-#     Constant-time comparison of two HMAC tags to mitigate timing attacks.
-
-#     Args:
-#         tag1 (bytes): First HMAC tag.
-#         tag2 (bytes): Second HMAC tag.
-
-#     Returns:
-#         bool: True if tags match, False otherwise.
-#     """
-#     if len(tag1) != len(tag2):
-#         return False
-#     diff = 0
-#     for x, y in zip(tag1, tag2):
-#         diff |= x ^ y
-#     return diff == 0
-
 
 class SigmaHandshake:
     """
@@ -467,7 +467,7 @@ class SigmaKeys:
         """
         self.kS = HKDF(
             algorithm=hashes.SHA256(),
-            length=32,  # 32-byte AES-256 key
+            length=32,  # 32-byte key
             salt=salt,
             info=b"SIGMA-session-key"
         ).derive(shared_secret)
@@ -484,7 +484,7 @@ class SigmaKeys:
         if identity_protection:
             self.kE = HKDF(
                 algorithm=hashes.SHA256(),
-                length=32,  # 32-byte AES-256 key
+                length=32,  # 32-byte key
                 salt=salt,
                 info=b"SIGMA-identity-key"
             ).derive(shared_secret)
@@ -603,7 +603,7 @@ class SecureChannel:
             plaintext (bytes): The plaintext message.
 
         Returns:
-            bytes: A JSON-encoded message ready for transmission.
+            bytes: A JSON-encoded (ciphertext + mac_tag) message ready for transmission.
         """
         ciphertext = self._encrypt(plaintext)
         mac_tag = self._compute_hmac(ciphertext)

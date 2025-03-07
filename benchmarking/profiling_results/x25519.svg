@@ -1,0 +1,393 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="312"
+     xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<style type="text/css">
+    .func_g:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+</style>
+<svg class="func_g" x="0.0" y="120" width="1194.5404342228164" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 99.63% (1 1 3.208e-06 0.0048702910000000006)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 140, 79)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="0.0" y="96" width="568.6377876213727" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:88:from_private_key 47.47% (1 1 3.168e-06 0.002320542)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">from_private_key</text>
+</g></svg>
+<svg class="func_g" x="0.07143356862225266" y="72" width="567.5942683766539" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 47.38% (1 1 4.041e-06 0.0023162910000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 140, 79)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="0.10080598362370834" y="48" width="565.9364852266567" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:30:scalar_multiply 47.24% (1 1 0.00015387517674608368 0.00230953766391511)</title>
+    <rect height="100%" width="100%" fill="rgb(57, 242, 168)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="0.10080598362370834" y="24" width="475.22307120514097" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:78:_ladder_step 39.69% (244 244 0.0005902291245565434 0.0019399970685144508)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">_ladder_step</text>
+</g></svg>
+<svg class="func_g" x="0.10080598362370834" y="0" width="49.69244117509225" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:9:field_add 4.22% (1953 1953 0.00020650655800159094 0.00020650655800159094)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">field_add</text>
+</g></svg>
+<svg class="func_g" x="50.793247158715964" y="0" width="279.64343871780835" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:14:field_mul 23.39% (2441 2441 0.0011432613859563166 0.0011432613859563166)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 240, 141)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">field_mul</text>
+</g></svg>
+<svg class="func_g" x="476.32387718876464" y="24" width="32.04396687663762" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:4:mult_inverse 2.75% (1 1 1.0170662044100668e-06 0.0001346117035248618)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 240, 141)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">mult_inverse</text>
+</g></svg>
+<svg class="func_g" x="476.32387718876464" y="0" width="31.79430134912524" height="23"><g>
+    <title>~:0:&lt;built-in method builtins.pow&gt; 2.73% (1 1 0.00013359463732045174 0.00013359463732045174)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 215, 125)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method builtins.pow&gt;</text>
+</g></svg>
+<svg class="func_g" x="509.50001993290874" y="24" width="18.764580564819507" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:125:constant_swap 1.65% (490 490 8.051526831561369e-05 8.051526831561369e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 140, 79)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">constant_swap</text>
+</g></svg>
+<svg class="func_g" x="569.6377876213727" y="96" width="4.666326682156214" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:118:generate 0.47% (2 2 4.206e-06 2.3083000000000002e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 165, 95)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">generate</text>
+</g></svg>
+<svg class="func_g" x="569.6377876213727" y="72" width="1" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:80:clamp_scalar 0.14% (2 2 5.585000000000001e-06 6.667000000000001e-06)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 140, 79)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">clamp_scalar</text>
+</g></svg>
+<svg class="func_g" x="571.9803668150571" y="72" width="1.2912746718903998" height="23"><g>
+    <title>~:0:&lt;built-in method posix.urandom&gt; 0.19% (2 2 9.334e-06 9.334e-06)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method posix.urandom&gt;</text>
+</g></svg>
+<svg class="func_g" x="575.3041143035289" y="96" width="618.4488323311768" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:125:exchange 51.62% (1 1 1.7070000000000001e-06 0.002523458)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 215, 125)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">exchange</text>
+</g></svg>
+<svg class="func_g" x="575.345108825728" y="72" width="617.9681899691069" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 51.58% (1 1 2.667e-06 0.0025215000000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 140, 79)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="575.3771054559346" y="48" width="616.5882053813019" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:30:scalar_multiply 51.47% (1 1 0.0001676228232539164 0.0025158783360848904)</title>
+    <rect height="100%" width="100%" fill="rgb(57, 242, 168)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="575.3771054559346" y="24" width="517.7701966105997" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:78:_ladder_step 43.23% (266 266 0.0006429618754434564 0.002113321931485549)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">_ladder_step</text>
+</g></svg>
+<svg class="func_g" x="575.3771054559346" y="0" width="54.22144823543351" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:9:field_add 4.60% (2127 2127 0.00022495644199840904 0.00022495644199840904)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">field_add</text>
+</g></svg>
+<svg class="func_g" x="630.5985536913681" y="0" width="304.7169227704156" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:14:field_mul 25.48% (2659 2659 0.0012454036140436835 0.0012454036140436835)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 240, 141)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">field_mul</text>
+</g></svg>
+<svg class="func_g" x="1094.1473020665344" y="24" width="34.99620898249833" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:4:mult_inverse 3.00% (1 1 1.107933795589933e-06 0.00014663829647513818)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 240, 141)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">mult_inverse</text>
+</g></svg>
+<svg class="func_g" x="1094.1473020665344" y="0" width="34.72423762574168" height="23"><g>
+    <title>~:0:&lt;built-in method builtins.pow&gt; 2.98% (1 1 0.00014553036267954826 0.00014553036267954826)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 215, 125)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method builtins.pow&gt;</text>
+</g></svg>
+<svg class="func_g" x="1130.2874958849625" y="24" width="20.530404479544178" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:125:constant_swap 1.79% (534 534 8.77087316843863e-05 8.77087316843863e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 140, 79)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">constant_swap</text>
+</g></svg>
+<svg class="func_g" x="1195.5404342228164" y="120" width="3.459565777183726" height="23"><g>
+    <title>/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/cProfile.py:121:__exit__ 0.37% (1 1 3.5000000000000004e-06 1.8167e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 165, 95)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">__exit__</text>
+</g></svg>
+<svg class="func_g" x="1195.5404342228164" y="96" width="2.600399144270034" height="23"><g>
+    <title>~:0:&lt;method 'disable' of '_lsprof.Profiler' objects&gt; 0.30% (1 1 1.4667e-05 1.4667e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 190, 110)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;method 'disable' of '_lsprof.Profiler' objects&gt;</text>
+</g></svg>
+<svg class="func_g" x="0.8488566333187274" y="168" width="77.92010118528174" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:30:scalar_multiply 6.58% (2 2 0.00032149800000000003 0.004825416)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 215, 125)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="0.8488566333187274" y="192" width="77.92010118528177" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 6.58% (2 2 0.00032149800000000003 0.004825416)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="0.8488566333187274" y="216" width="36.78623758127572" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:88:from_private_key 0.08% (1 1 4.041e-06 0.0023162910000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">from_private_key</text>
+</g></svg>
+<svg class="func_g" x="0.8488566333187274" y="240" width="36.78623758127572" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.06% (1 1 3.168e-06 0.002320542)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="38.635094214594446" y="216" width="40.13386360400603" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:125:exchange 0.05% (1 1 2.667e-06 0.0025215000000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">exchange</text>
+</g></svg>
+<svg class="func_g" x="38.635094214594446" y="240" width="40.13386360400603" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.03% (1 1 1.7070000000000001e-06 0.002523458)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="79.76895781860047" y="168" width="301.719016916991" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:78:_ladder_step 25.23% (510 510 0.001233191 0.0040533190000000005)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">_ladder_step</text>
+</g></svg>
+<svg class="func_g" x="79.76895781860047" y="192" width="301.719016916991" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:30:scalar_multiply 25.23% (510 510 0.001233191 0.0040533190000000005)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="79.76895781860047" y="216" width="301.719016916991" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 6.58% (2 2 0.00032149800000000003 0.004825416)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="79.76895781860047" y="240" width="143.93915392659045" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:88:from_private_key 0.08% (1 1 4.041e-06 0.0023162910000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">from_private_key</text>
+</g></svg>
+<svg class="func_g" x="79.76895781860047" y="264" width="143.93915392659045" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.06% (1 1 3.168e-06 0.002320542)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="224.70811174519093" y="240" width="156.77986299040052" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:125:exchange 0.05% (1 1 2.667e-06 0.0025215000000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">exchange</text>
+</g></svg>
+<svg class="func_g" x="224.70811174519093" y="264" width="156.77986299040052" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.03% (1 1 1.7070000000000001e-06 0.002523458)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="383.00961161986055" y="168" width="104.9138894105258" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:9:field_add 8.83% (4080 4080 0.00043146300000000004 0.00043146300000000004)</title>
+    <rect height="100%" width="100%" fill="rgb(166, 166, 255)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">field_add</text>
+</g></svg>
+<svg class="func_g" x="383.00961161986055" y="192" width="104.9138894105258" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:78:_ladder_step 8.83% (4080 4080 0.00043146300000000004 0.00043146300000000004)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">_ladder_step</text>
+</g></svg>
+<svg class="func_g" x="383.00961161986055" y="216" width="104.9138894105258" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:30:scalar_multiply 25.23% (510 510 0.001233191 0.0040533190000000005)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="383.00961161986055" y="240" width="104.9138894105258" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 6.58% (2 2 0.00032149800000000003 0.004825416)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="383.00961161986055" y="264" width="49.710621607381576" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:88:from_private_key 0.08% (1 1 4.041e-06 0.0023162910000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">from_private_key</text>
+</g></svg>
+<svg class="func_g" x="383.00961161986055" y="288" width="49.710621607381576" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.06% (1 1 3.168e-06 0.002320542)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="433.7202332272421" y="264" width="54.203267803144186" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:125:exchange 0.05% (1 1 2.667e-06 0.0025215000000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">exchange</text>
+</g></svg>
+<svg class="func_g" x="433.7202332272421" y="288" width="54.2032678031442" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.03% (1 1 1.7070000000000001e-06 0.002523458)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="488.92350103038626" y="168" width="585.6365221916604" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:14:field_mul 48.89% (5102 5102 0.00238979 0.00238979)</title>
+    <rect height="100%" width="100%" fill="rgb(230, 230, 255)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">field_mul</text>
+</g></svg>
+<svg class="func_g" x="489.19966173382284" y="192" width="585.3603614882239" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:78:_ladder_step 48.86% (5100 5100 0.0023886650000000003 0.0023886650000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">_ladder_step</text>
+</g></svg>
+<svg class="func_g" x="489.19966173382284" y="216" width="585.3603614882239" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:30:scalar_multiply 25.23% (510 510 0.001233191 0.0040533190000000005)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="489.19966173382284" y="240" width="585.3603614882239" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 6.58% (2 2 0.00032149800000000003 0.004825416)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="489.19966173382284" y="264" width="279.7440892076404" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:88:from_private_key 0.08% (1 1 4.041e-06 0.0023162910000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">from_private_key</text>
+</g></svg>
+<svg class="func_g" x="489.19966173382284" y="288" width="279.7440892076404" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.06% (1 1 3.168e-06 0.002320542)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="769.9437509414631" y="264" width="304.61627228058353" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:125:exchange 0.05% (1 1 2.667e-06 0.0025215000000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">exchange</text>
+</g></svg>
+<svg class="func_g" x="769.9437509414631" y="288" width="304.61627228058353" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.03% (1 1 1.7070000000000001e-06 0.002523458)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="1075.560023222047" y="168" width="1" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:80:clamp_scalar 0.11% (2 2 5.585000000000001e-06 6.667000000000001e-06)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 140, 79)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">clamp_scalar</text>
+</g></svg>
+<svg class="func_g" x="1075.560023222047" y="192" width="1" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:118:generate 0.11% (2 2 5.585000000000001e-06 6.667000000000001e-06)</title>
+    <rect height="100%" width="100%" fill="rgb(211, 211, 211)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">generate</text>
+</g></svg>
+<svg class="func_g" x="1075.560023222047" y="216" width="1" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.09% (2 2 4.206e-06 2.3083000000000002e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="1077.831168847109" y="168" width="40.294985044363685" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:125:constant_swap 3.44% (1024 1024 0.00016822400000000002 0.00016822400000000002)</title>
+    <rect height="100%" width="100%" fill="rgb(182, 182, 255)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">constant_swap</text>
+</g></svg>
+<svg class="func_g" x="1077.831168847109" y="192" width="40.294985044363685" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:30:scalar_multiply 3.44% (1024 1024 0.00016822400000000002 0.00016822400000000002)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="1077.831168847109" y="216" width="40.294985044363685" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 6.58% (2 2 0.00032149800000000003 0.004825416)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="1077.831168847109" y="240" width="18.771668971105658" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:88:from_private_key 0.08% (1 1 4.041e-06 0.0023162910000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">from_private_key</text>
+</g></svg>
+<svg class="func_g" x="1077.831168847109" y="264" width="18.771668971105658" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.06% (1 1 3.168e-06 0.002320542)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="1097.6028378182145" y="240" width="20.52331607325803" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:125:exchange 0.05% (1 1 2.667e-06 0.0025215000000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">exchange</text>
+</g></svg>
+<svg class="func_g" x="1097.6028378182145" y="264" width="20.523316073258027" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.03% (1 1 1.7070000000000001e-06 0.002523458)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="1119.2385819822937" y="168" width="1" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 0.14% (2 2 6.708000000000001e-06 0.004837791)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 140, 79)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="1124.6486315316608" y="168" width="67.51853897486693" height="23"><g>
+    <title>~:0:&lt;built-in method builtins.pow&gt; 5.71% (2 2 0.000279125 0.000279125)</title>
+    <rect height="100%" width="100%" fill="rgb(230, 230, 255)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method builtins.pow&gt;</text>
+</g></svg>
+<svg class="func_g" x="1124.6486315316608" y="192" width="67.51853897486693" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/utils.py:4:mult_inverse 5.71% (2 2 0.000279125 0.000279125)</title>
+    <rect height="100%" width="100%" fill="rgb(190, 190, 190)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">mult_inverse</text>
+</g></svg>
+<svg class="func_g" x="1124.6486315316608" y="216" width="67.51853897486693" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/montgomery_ladder.py:30:scalar_multiply 0.04% (2 2 2.125e-06 0.00028125000000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="1124.6486315316608" y="240" width="67.51853897486693" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:36:scalar_multiply 6.58% (2 2 0.00032149800000000003 0.004825416)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">scalar_multiply</text>
+</g></svg>
+<svg class="func_g" x="1124.6486315316608" y="264" width="31.80606275893966" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:88:from_private_key 0.08% (1 1 4.041e-06 0.0023162910000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">from_private_key</text>
+</g></svg>
+<svg class="func_g" x="1124.6486315316608" y="288" width="31.80606275893966" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.06% (1 1 3.168e-06 0.002320542)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="1157.4546942906006" y="264" width="34.71247621592725" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:125:exchange 0.05% (1 1 2.667e-06 0.0025215000000000003)</title>
+    <rect height="100%" width="100%" fill="rgb(197, 197, 197)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">exchange</text>
+</g></svg>
+<svg class="func_g" x="1157.4546942906006" y="288" width="34.71247621592725" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.03% (1 1 1.7070000000000001e-06 0.002523458)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="1193.5250747781815" y="168" width="1.2912746718903998" height="23"><g>
+    <title>~:0:&lt;built-in method posix.urandom&gt; 0.19% (2 2 9.334e-06 9.334e-06)</title>
+    <rect height="100%" width="100%" fill="rgb(166, 166, 255)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method posix.urandom&gt;</text>
+</g></svg>
+<svg class="func_g" x="1193.5250747781815" y="192" width="1.2912746718903998" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/x25519/x25519.py:118:generate 0.19% (2 2 9.334e-06 9.334e-06)</title>
+    <rect height="100%" width="100%" fill="rgb(211, 211, 211)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">generate</text>
+</g></svg>
+<svg class="func_g" x="1193.5250747781815" y="216" width="1.2912746718903998" height="23"><g>
+    <title>/Users/firas/UniExtras/P79/p79-assignment-2/benchmarking/benchmark_sigma.py:182:&lt;lambda&gt; 0.09% (2 2 4.206e-06 2.3083000000000002e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(218, 218, 218)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;lambda&gt;</text>
+</g></svg>
+<svg class="func_g" x="1195.8163494500718" y="168" width="2.600399144270034" height="23"><g>
+    <title>~:0:&lt;method 'disable' of '_lsprof.Profiler' objects&gt; 0.30% (1 1 1.4667e-05 1.4667e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(214, 214, 255)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;method 'disable' of '_lsprof.Profiler' objects&gt;</text>
+</g></svg>
+<svg class="func_g" x="1195.8163494500718" y="192" width="2.600399144270034" height="23"><g>
+    <title>/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/cProfile.py:121:__exit__ 0.30% (1 1 1.4667e-05 1.4667e-05)</title>
+    <rect height="100%" width="100%" fill="rgb(211, 211, 211)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">__exit__</text>
+</g></svg>
+</svg>

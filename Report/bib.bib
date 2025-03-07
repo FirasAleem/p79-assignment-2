@@ -1,141 +1,86 @@
-@misc{hyperellipticEFDMG,
-  author       = {Daniel J. Bernstein and Tanja Lange},
-  title        = {Explicit-Formulas Database: Montgomery curves},
-  year         = {2025},
-  howpublished = {\url{https://www.hyperelliptic.org/EFD/g1p/auto-montgom.html}},
-  note         = {Accessed: 2025-02-15}
+@techreport{aleem2024curve25519,
+  author      = {Firas Aleem},
+  title       = {Assignment 1: Curve25519 Diffie-Hellman and Ed25519 Signatures},
+  institution = {University of Cambridge, Computer Laboratory},
+  year        = {2024},
+  month       = {2},
+  day         = {24},
+  type        = {P79 Course Assignment},
+  number      = {1}
 }
+
+@inproceedings{Biryukov2016,
+  title     = {Argon2: {New Generation of Memory-Hard Functions for Password Hashing and Other Applications}},
+  url       = {http://dx.doi.org/10.1109/EuroSP.2016.31},
+  doi       = {10.1109/eurosp.2016.31},
+  booktitle = {2016 IEEE European Symposium on Security and Privacy (EuroSandP)},
+  publisher = {IEEE},
+  author    = {Biryukov, Alex and Dinu, Daniel and Khovratovich, Dmitry},
+  year      = {2016},
+  month     = {3},
+  pages     = {292-302}
+}
+
 
 @misc{P79LectureNotes,
   author       = {Martin Kleppmann and Daniel Hugenroth},
   title        = {P79: Cryptography and Protocol Engineering Lecture Notes},
   year         = {2025},
   howpublished = {University of Cambridge, MPhil in Advanced Computer Science / Computer Science Tripos, Part III},
-  note         = {Lent term 2024/25. Available at: \url{https://www.cl.cam.ac.uk/teaching/2425/P79/} (Accessed: 2025-02-15)}
+  note         = {Lent Term 2024/25. Available at: \url{https://www.cl.cam.ac.uk/teaching/2425/P79/} (Accessed: 2025-03-01)}
 }
 
-@misc{rfc7748,
-    series =    {Request for Comments},
-    number =    7748,
-    howpublished =  {RFC 7748},
-    publisher = {RFC Editor},
-    doi =       {10.17487/RFC7748},
-    url =       {https://www.rfc-editor.org/info/rfc7748},
-    author =    {Adam Langley and Mike Hamburg and Sean Turner},
-    title =     {{Elliptic Curves for Security}},
-    pagetotal = 22,
-    year =      2016,
-    month =     jan,
-    abstract =  {This memo specifies two elliptic curves over prime fields that offer a high level of practical security in cryptographic applications, including Transport Layer Security (TLS). These curves are intended to operate at the \textasciitilde{}128-bit and \textasciitilde{}224-bit security level, respectively, and are generated deterministically based on a list of required properties.},
-}
-
-@misc{Kleppmann2020,
-  author       = {Martin Kleppmann},
-  title        = {Implementing Curve25519/X25519: A Tutorial on Elliptic Curve Cryptography},
-  year         = {2020},
-  month        = {10},
-  note         = {Draft manuscript. Available at: \url{https://martin.kleppmann.com/papers/curve25519.pdf} (Accessed: 2025-02-15)}
-}
-
-@misc{revisited,
-      author = {Huseyin Hisil and Kenneth Koon-Ho Wong and Gary Carter and Ed Dawson},
-      title = {Twisted Edwards Curves Revisited},
-      howpublished = {Cryptology {ePrint} Archive, Paper 2008/522},
-      year = {2008},
-      url = {https://eprint.iacr.org/2008/522}
-}
-
-@InProceedings{taming,
-author="Chalkias, Konstantinos
-and Garillot, Fran{\c{c}}ois
-and Nikolaenko, Valeria",
-editor="van der Merwe, Thyla
-and Mitchell, Chris
-and Mehrnezhad, Maryam",
-title="Taming the Many EdDSAs",
-booktitle="Security Standardisation Research",
-year="2020",
-publisher="Springer International Publishing",
-address="Cham",
-pages="67--90",
-abstract="This paper analyses security of concrete instantiations of EdDSA by identifying exploitable inconsistencies between standardization recommendations and Ed25519 implementations. We mainly focus on current ambiguity regarding signature verification equations, binding and malleability guarantees, and incompatibilities between randomized batch and single verification. We give a formulation of Ed25519 signature scheme that achieves the highest level of security, explaining how each step of the algorithm links with the formal security properties. We develop optimizations to allow for more efficient secure implementations. Finally, we designed a set of edge-case test-vectors and run them by some of the most popular Ed25519 libraries. The results allowed to understand the security level of those implementations and showed that most libraries do not comply with the latest standardization recommendations. The methodology allows to test compatibility of different Ed25519 implementations which is of practical importance for consensus-driven applications.",
-isbn="978-3-030-64357-7"
-}
-
-@misc{rfc8032,
-    series =    {Request for Comments},
-    number =    8032,
-    howpublished =  {RFC 8032},
-    publisher = {RFC Editor},
-    doi =       {10.17487/RFC8032},
-    url =       {https://www.rfc-editor.org/info/rfc8032},
-    author =    {Simon Josefsson and Ilari Liusvaara},
-    title =     {{Edwards-Curve Digital Signature Algorithm (EdDSA)}},
-    pagetotal = 60,
-    year =      2017,
-    month =     1,
-    abstract =  {This document describes elliptic curve signature scheme Edwards-curve Digital Signature Algorithm (EdDSA). The algorithm is instantiated with recommended parameters for the edwards25519 and edwards448 curves. An example implementation and test vectors are provided.},
-}
-
-@misc{ZIP215,
-  author       = {Henry de Valence},
-  title        = {Explicitly Defining and Modifying Ed25519 Validation Rules},
-  year         = {2020},
-  month        = {4},
-  howpublished = {Zcash Improvement Proposal (ZIP) 215},
-  note         = {Final. Available at: \url{https://zips.z.cash/zip-0215} (Accessed: 2025-02-15)},
-  license      = {BSD-2-Clause}
-}
-
-@TECHREPORT{NIST,
-  title     = "Digital Signature Standard ({DSS})",
-  author    = "{National Institute of Standards and Technology (US)}",
-  abstract  = "This standard specifies a suite of algorithms that can be used
-               to generate a digital signature. Digital signatures are used to
-               detect unauthorized modifications to data and to authenticate
-               the identity of the signatory. In addition, the recipient of
-               signed data can use a digital signature as evidence in
-               demonstrating to a third party that the signature was, in fact,
-               generated by the claimed signatory. This is known as
-               non-repudiation since the signatory cannot easily repudiate the
-               signature at a later time.",
-  publisher = "National Institute of Standards and Technology (U.S.)",
-  month     =  2,
-  year      =  2023,
-  address   = "Washington, D.C."
+@misc{rfc9382,
+  series       = {Request for Comments},
+  number       = 9382,
+  howpublished = {RFC 9382},
+  publisher    = {RFC Editor},
+  doi          = {10.17487/RFC9382},
+  url          = {https://www.rfc-editor.org/info/rfc9382},
+  author       = {Watson Ladd},
+  title        = {{SPAKE2, a Password-Authenticated Key Exchange}},
+  pagetotal    = 17,
+  year         = 2023,
+  month        = sep,
+  abstract     = {This document describes SPAKE2, which is a protocol for two parties that share a password to derive a strong shared key without disclosing the password. This method is compatible with any group, is computationally efficient, and has a security proof. This document predated the Crypto Forum Research Group (CFRG) password-authenticated key exchange (PAKE) competition, and it was not selected; however, given existing use of variants in Kerberos and other applications, it was felt that publication was beneficial. Applications that need a symmetric PAKE, but are unable to hash onto an elliptic curve at execution time, can use SPAKE2. This document is a product of the Crypto Forum Research Group in the Internet Research Task Force (IRTF).}
 }
 
 
+@inproceedings{SIGMA,
+  author    = {Krawczyk, Hugo},
+  editor    = {Boneh, Dan},
+  title     = {SIGMA: The `SIGn-and-MAc' Approach to Authenticated Diffie Hellman and Its Use in the IKE Protocols},
+  booktitle = {Advances in Cryptology - CRYPTO 2003},
+  year      = {2003},
+  publisher = {Springer Berlin Heidelberg},
+  address   = {Berlin, Heidelberg},
+  pages     = {400--425},
+  abstract  = {We present the SIGMA family of key-exchange protocols and the ``SIGn-and-MAc'' approach to authenticated Diffie-Hellman underlying its design. The SIGMA protocols provide perfect forward secrecy via a Diffie-Hellman exchange authenticated with digital signatures, and are specifically designed to ensure sound cryptographic key exchange while providing a variety of features and trade-offs required in practical scenarios (such as optional identity protection and reduced number of protocol rounds). As a consequence, the SIGMA protocols are very well suited for use in actual applications and for standardized key exchange. In particular, SIGMA serves as the cryptographic basis for the signature-based modes of the standardized Internet Key Exchange (IKE) protocol (version 1 and 2).},
+  isbn      = {978-3-540-45146-4}
+}
 
-@misc{PyNaCl,
-  author       = {The PyNaCl Developers},
-  title        = {PyNaCl: Python binding to the Networking and Cryptography library},
+@inproceedings{lam2015numba,
+  title={Numba: A LLVM-based Python JIT Compiler},
+  author={Lam, Siu Kwan and Pitrou, Antoine and Seibert, Stanley},
+  booktitle={Proceedings of the Second Workshop on the LLVM Compiler Infrastructure in HPC},
+  pages={1--6},
+  year={2015}
+}
+
+@misc{gmpy2,
+  author       = {Case Van Horsen},
+  title        = {gmpy2: Multiple-precision arithmetic in Python},
   year         = {2025},
-  howpublished = {Python Package Index (PyPI)},
-  note         = {Available at: \url{https://pypi.org/project/PyNaCl/} (Accessed: 2025-02-15)}
+  howpublished = {Python package},
+  url          = {https://pypi.org/project/gmpy2/},
+  note         = {Version 2.2.1, accessed March 3, 2025}
 }
 
-@inproceedings{pip,
-author = {Pippenger, Nicholas},
-title = {On the evaluation of powers and related problems},
-year = {1976},
-publisher = {IEEE Computer Society},
-address = {USA},
-url = {https://doi.org/10.1109/SFCS.1976.21},
-doi = {10.1109/SFCS.1976.21},
-booktitle = {Proceedings of the 17th Annual Symposium on Foundations of Computer Science},
-pages = {258-263},
-numpages = {6},
-series = {SFCS '76}
-}
-
-@article{Straus1964,
-  author    = {E. G. Straus},
-  title     = {Addition Chains of Vectors (Problem 5125)},
-  journal   = {The American Mathematical Monthly},
-  volume    = {71},
-  number    = {7},
-  pages     = {806--808},
-  year      = {1964},
-  publisher = {Mathematical Association of America}
+@misc{securitypitfalls,
+  author = {Security Pitfalls Blog},
+  title = {Constant Time Compare in Python},
+  year = {2018},
+  month = {8},
+  url = {https://securitypitfalls.wordpress.com/2018/08/03/constant-time-compare-in-python/},
+  note = {Accessed: 2025-03-04}
 }

@@ -17,6 +17,7 @@ from ed25519.utils import (
     
 )
 import hmac as built_in_hmac
+import argon2 
 
 # The prime modulus (same as for Curve25519)
 P = 2**255 - 19
@@ -35,11 +36,36 @@ HKDF_HASH = hashes.SHA256()
 M = decode_edwards_point(bytes.fromhex("d048032c6ea0b6d697ddc2e86bda85a33adac920f1bf18e1b0c6d166a5cecdaf"))
 N = decode_edwards_point(bytes.fromhex("d3bfb518f44f3430f29d0c92af503865a1ed3281dc69b35dd868ba85f886c4ab"))
 
-
 def hash_password(password: bytes) -> int:
-    """Computes w = H(password) mod L."""
-    digest = hashlib.sha512(password).digest()
-    return int.from_bytes(digest, "big") % L
+    """
+    Computes w = Argon2(password) mod L, returning an integer in the range [0, L-1].
+    For a PAKE use-case (no need to 'verify' later), you can use a fixed or
+    derived salt rather than a random one you must store.
+    """
+    # fixed salt:
+    salt = b"Argon2PWHashSaltValue"
+
+    # Produce a raw 64-byte Argon2 digest
+    argon_digest = argon2.low_level.hash_secret_raw(
+        secret=password,
+        salt=salt,
+        time_cost=2,
+        memory_cost=2**17,
+        parallelism=1,
+        hash_len=32,
+        type=argon2.low_level.Type.I
+    )
+
+    # Convert to integer mod L
+    return int.from_bytes(argon_digest, "big") % L
+
+
+# Originally, this was my hash function, but when double chekcing with the RFC, it recommends a "Memory-Hard" function
+# after some research, I found that Argon2 is a good choice for this.
+# def hash_password(password: bytes) -> int:
+#     """Computes w = H(password) mod L."""
+#     digest = hashlib.sha512(password).digest()
+#     return int.from_bytes(digest, "big") % L
 
 def encode_with_length(value: bytes) -> bytes:
     """Encodes a byte string with an 8-byte little-endian length prefix."""
@@ -193,7 +219,6 @@ class SPAKE2Party:
         """
         self.peer_pi = peer_pi
         self.peer_name = peer_name
-
 
     def generate_confirmation(self, Kc: bytes) -> bytes:
         """

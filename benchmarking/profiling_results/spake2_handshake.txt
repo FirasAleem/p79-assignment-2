@@ -1,23 +1,23 @@
-         51164 function calls in 0.028 seconds
+         52160 function calls in 0.352 seconds
 
    Ordered by: cumulative time
-   List reduced from 63 to 15 due to restriction <15>
+   List reduced from 67 to 15 due to restriction <15>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-        1    0.000    0.000    0.028    0.028 benchmark_spake2.py:59(run_spake2_handshake)
+        1    0.000    0.000    0.352    0.352 benchmark_spake2.py:59(run_spake2_handshake)
+        1    0.000    0.000    0.336    0.336 benchmark_spake2.py:54(setup_spake2)
+        2    0.000    0.000    0.336    0.168 spake2.py:91(__init__)
+        2    0.000    0.000    0.324    0.162 spake2.py:39(hash_password)
+        2    0.000    0.000    0.324    0.162 low_level.py:120(hash_secret_raw)
+        2    0.324    0.162    0.324    0.162 {built-in method _ffi.argon2_hash}
        10    0.001    0.000    0.025    0.003 utils.py:195(edwards_scalar_mult)
-        1    0.000    0.000    0.016    0.016 spake2.py:232(run_handshake)
-        2    0.000    0.000    0.016    0.008 spake2.py:109(compute_shared_secret)
-    32640    0.016    0.000    0.016    0.000 utils.py:14(field_mul)
-     2512    0.004    0.000    0.016    0.000 utils.py:159(edwards_point_double_extended)
-        1    0.000    0.000    0.011    0.011 benchmark_spake2.py:54(setup_spake2)
-        2    0.000    0.000    0.011    0.006 spake2.py:65(__init__)
-     1112    0.002    0.000    0.008    0.000 utils.py:122(edwards_point_add_extended)
-        2    0.000    0.000    0.006    0.003 spake2.py:92(compute_public_message)
+        1    0.000    0.000    0.016    0.016 spake2.py:258(run_handshake)
+        2    0.000    0.000    0.016    0.008 spake2.py:135(compute_shared_secret)
+    33270    0.016    0.000    0.016    0.000 utils.py:14(field_mul)
+     2520    0.004    0.000    0.016    0.000 utils.py:159(edwards_point_double_extended)
+     1174    0.002    0.000    0.009    0.000 utils.py:122(edwards_point_add_extended)
+        2    0.000    0.000    0.006    0.003 spake2.py:118(compute_public_message)
         2    0.000    0.000    0.005    0.002 utils.py:240(is_valid_edwards_point)
-       20    0.002    0.000    0.002    0.000 {built-in method builtins.pow}
-       14    0.000    0.000    0.002    0.000 utils.py:4(mult_inverse)
-    14504    0.001    0.000    0.001    0.000 utils.py:9(field_add)
-        4    0.000    0.000    0.001    0.000 utils.py:95(decode_edwards_point)
+       22    0.003    0.000    0.003    0.000 {built-in method builtins.pow}
 
 
