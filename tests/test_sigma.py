@@ -1,3 +1,4 @@
+import base64
 import pytest
 import unittest
 import os
@@ -6,8 +7,9 @@ from cryptography.hazmat.primitives import hashes
 from x25519.x25519 import X25519PrivateKey, X25519PublicKey
 from ed25519.ed25519 import SigningKey, VerifyingKey
 from sigma.sigma import (
-    CertificateAuthority, Certificate, SigmaParty, SigmaHandshake, SecureChannel, compute_hmac, hmac_compare
+    SigmaParty, SigmaHandshake, SecureChannel, compute_hmac, hmac_compare
 )
+from sigma.certificates import CertificateAuthority, Certificate
 
 
 class TestSigmaProtocol(unittest.TestCase):
@@ -93,7 +95,7 @@ class TestSigmaProtocol(unittest.TestCase):
         key = os.urandom(32)
         mac_key = os.urandom(32)
         
-        secure_channel = SecureChannel(key, mac_key)
+        secure_channel = SecureChannel(key)
         
         message = b"Confidential message"
         encrypted_message = secure_channel.send_message(message)
@@ -106,7 +108,7 @@ class TestSigmaProtocol(unittest.TestCase):
         key = os.urandom(32)
         mac_key = os.urandom(32)
         
-        secure_channel = SecureChannel(key, mac_key)
+        secure_channel = SecureChannel(key)
         
         message = b"Confidential message"
         encrypted_message = secure_channel.send_message(message)
@@ -240,8 +242,8 @@ class TestSigmaProtocol(unittest.TestCase):
         assert session_key == alice.session_key
 
         # Step 5: Establish secure communication
-        secure_channel_alice = SecureChannel(alice.session_key, bob.mac_key)
-        secure_channel_bob = SecureChannel(bob.session_key, bob.mac_key)
+        secure_channel_alice = SecureChannel(alice.session_key)
+        secure_channel_bob = SecureChannel(bob.session_key)
 
         # Alice sends a secure message to Bob
         original_message = b"Hello Bob, this is Alice!"
@@ -264,3 +266,119 @@ class TestSigmaProtocol(unittest.TestCase):
         assert decrypted_reply == reply_message
 
         print("\nFull SIGMA protocol setup & secure messaging test passed")
+
+    # SIGMA-I Tests
+    def test_sigma_handshake_identity_protection(self):
+        ca = CertificateAuthority("TestCA")
+        alice = SigmaParty("Alice", ca.public_key)
+        bob = SigmaParty("Bob", ca.public_key)
+
+        alice.set_certificate(ca.issue_certificate("Alice", alice.ed25519_public))
+        bob.set_certificate(ca.issue_certificate("Bob", bob.ed25519_public))
+
+        handshake = SigmaHandshake(alice, bob, identity_protection=True)
+
+        sigma_init_msg = handshake.create_initiation_message()
+        sigma_resp_msg = handshake.handle_initiation_message(sigma_init_msg)
+        sigma_final_msg = handshake.process_response_message(sigma_resp_msg)
+        session_key = handshake.finalize_handshake(sigma_final_msg)
+
+        assert session_key is not None
+        assert alice.session_key == bob.session_key  # Keys must match
+
+    def test_sigma_identity_encryption(self):
+        ca = CertificateAuthority("TestCA")
+        alice = SigmaParty("Alice", ca.public_key)
+        bob = SigmaParty("Bob", ca.public_key)
+
+        alice.set_certificate(ca.issue_certificate("Alice", alice.ed25519_public))
+        bob.set_certificate(ca.issue_certificate("Bob", bob.ed25519_public))
+
+        handshake = SigmaHandshake(alice, bob, identity_protection=True)
+
+        sigma_init_msg = handshake.create_initiation_message()
+        sigma_resp_msg = handshake.handle_initiation_message(sigma_init_msg)
+
+        data = json.loads(sigma_resp_msg.decode("utf-8"))
+
+        # If identity protection is enabled, the certificate should NOT be visible in plaintext
+        assert "certificate" not in data
+        assert "ciphertext_b64" in data
+        assert "nonce_b64" in data
+        assert "tag_b64" in data
+
+    def test_sigma_identity_decryption_failure(self):
+        ca = CertificateAuthority("TestCA")
+        alice = SigmaParty("Alice", ca.public_key)
+        bob = SigmaParty("Bob", ca.public_key)
+
+        alice.set_certificate(ca.issue_certificate("Alice", alice.ed25519_public))
+        bob.set_certificate(ca.issue_certificate("Bob", bob.ed25519_public))
+
+        handshake = SigmaHandshake(alice, bob, identity_protection=True)
+
+        sigma_init_msg = handshake.create_initiation_message()
+        sigma_resp_msg = handshake.handle_initiation_message(sigma_init_msg)
+
+        # Manually modify the response message to simulate incorrect kE usage
+        corrupted_data = json.loads(sigma_resp_msg.decode("utf-8"))
+        corrupted_data["nonce_b64"] = base64.b64encode(os.urandom(12)).decode("utf-8")  # Corrupt nonce
+        corrupted_message = json.dumps(corrupted_data).encode("utf-8")
+
+        with pytest.raises(ValueError, match="Decryption failed"):
+            handshake.process_response_message(corrupted_message)
+
+    def test_secure_channel_identity_protection(self):
+        ca = CertificateAuthority("TestCA")
+        alice = SigmaParty("Alice", ca.public_key)
+        bob = SigmaParty("Bob", ca.public_key)
+
+        alice.set_certificate(ca.issue_certificate("Alice", alice.ed25519_public))
+        bob.set_certificate(ca.issue_certificate("Bob", bob.ed25519_public))
+
+        handshake = SigmaHandshake(alice, bob, identity_protection=True)
+
+        sigma_init_msg = handshake.create_initiation_message()
+        sigma_resp_msg = handshake.handle_initiation_message(sigma_init_msg)
+        sigma_final_msg = handshake.process_response_message(sigma_resp_msg)
+        session_key = handshake.finalize_handshake(sigma_final_msg)
+
+        assert session_key == alice.session_key == bob.session_key
+
+        # Secure messaging
+        secure_channel_alice = SecureChannel(alice.session_key)
+        secure_channel_bob = SecureChannel(bob.session_key)
+
+        # Alice sends a message
+        plaintext = b"Identity protected message!"
+        encrypted_message = secure_channel_alice.send_message(plaintext)
+
+        # Bob decrypts the message
+        decrypted_message = secure_channel_bob.receive_message(encrypted_message)
+
+        assert decrypted_message == plaintext
+    
+    def test_sigma_identity_ciphertext_tampering(self):
+        ca = CertificateAuthority("TestCA")
+        alice = SigmaParty("Alice", ca.public_key)
+        bob = SigmaParty("Bob", ca.public_key)
+
+        alice.set_certificate(ca.issue_certificate("Alice", alice.ed25519_public))
+        bob.set_certificate(ca.issue_certificate("Bob", bob.ed25519_public))
+
+        handshake = SigmaHandshake(alice, bob, identity_protection=True)
+
+        sigma_init_msg = handshake.create_initiation_message()
+        sigma_resp_msg = handshake.handle_initiation_message(sigma_init_msg)
+
+        # Tamper with the encrypted identity ciphertext
+        data = json.loads(sigma_resp_msg.decode("utf-8"))
+        tampered_ciphertext = bytearray(base64.b64decode(data["ciphertext_b64"]))
+        tampered_ciphertext[5] ^= 0xFF  # Flip one bit in the ciphertext
+        data["ciphertext_b64"] = base64.b64encode(tampered_ciphertext).decode("utf-8")
+
+        tampered_message = json.dumps(data).encode("utf-8")
+
+        with pytest.raises(ValueError, match="Decryption failed"):
+            handshake.process_response_message(tampered_message)
+            

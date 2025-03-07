@@ -1,0 +1,23 @@
+         107393 function calls in 0.054 seconds
+
+   Ordered by: cumulative time
+   List reduced from 114 to 15 due to restriction <15>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.054    0.054 benchmark_sigma.py:167(<lambda>)
+       20    0.001    0.000    0.041    0.002 utils.py:195(edwards_scalar_mult)
+        1    0.000    0.000    0.032    0.032 benchmark_sigma.py:50(run_handshake)
+    64924    0.031    0.000    0.031    0.000 utils.py:14(field_mul)
+     4062    0.007    0.000    0.025    0.000 utils.py:159(edwards_point_double_extended)
+        4    0.000    0.000    0.022    0.005 ed25519.py:53(sign)
+        4    0.000    0.000    0.022    0.005 ed25519.py:113(sign)
+        8    0.000    0.000    0.022    0.003 ed25519.py:83(from_signing_key)
+        8    0.000    0.000    0.022    0.003 utils.py:46(compute_public_key)
+        1    0.000    0.000    0.019    0.019 benchmark_sigma.py:37(setup_sigma_handshake)
+     2014    0.004    0.000    0.014    0.000 utils.py:122(edwards_point_add_extended)
+        1    0.000    0.000    0.014    0.014 sigma.py:291(process_response_message)
+        2    0.000    0.000    0.012    0.006 ed25519.py:89(verify)
+        2    0.000    0.000    0.012    0.006 ed25519.py:148(verify)
+        2    0.000    0.000    0.011    0.005 sigma.py:76(sign_data)
+
+

@@ -1,7 +1,7 @@
 import os
 import json
 import base64
-from typing import Dict, Any, Optional
+from typing import Optional
 
 from cryptography.hazmat.primitives import hashes, hmac
 from x25519.x25519 import X25519PrivateKey, X25519PublicKey
@@ -10,127 +10,11 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from hmac import compare_digest
 
+from sigma.certificates import CertificateAuthority, Certificate
+
 # Alias for base64 encoding/decoding
 b64e = base64.b64encode
 b64d = base64.b64decode
-
-
-# Certificate and CA
-class Certificate:
-    """
-    A minimal certificate structure.
-
-    Attributes:
-        subject_name (str): Name of the subject (e.g. user ID, domain).
-        subject_key (bytes): The subject's public key (Ed25519) converted to bytes.
-        issuer_name (str): Name of the issuer (the CA).
-        signature (bytes): The CA's signature over (subject_name || subject_key).
-    """
-    def __init__(self, subject_name: str, subject_key: bytes, issuer_name: str, signature: bytes):
-        self.subject_name = subject_name
-        self.subject_key = subject_key
-        self.issuer_name = issuer_name
-        self.signature = signature
-
-    def to_dict(self) -> Dict[str, str]:
-        """
-        Encode the certificate fields into a dict for JSON serialization.
-        """
-        return {
-            "subject_name": self.subject_name,
-            "subject_key_b64": b64e(self.subject_key).decode("utf-8"),
-            "issuer_name": self.issuer_name,
-            "signature_b64": b64e(self.signature).decode("utf-8"),
-        }
-
-    def to_bytes(self) -> bytes:
-        """
-        Returns a canonical binary representation of the certificate.
-        (By JSON serializing the dict with sorted keys.)
-        """
-        return json.dumps(self.to_dict(), sort_keys=True).encode("utf-8")
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> 'Certificate':
-        """
-        Decode a certificate from a dictionary (the inverse of to_dict()).
-        """
-        return Certificate(
-            subject_name=data["subject_name"],
-            subject_key=b64d(data["subject_key_b64"]),
-            issuer_name=data["issuer_name"],
-            signature=b64d(data["signature_b64"])
-        )
-        
-
-
-
-class CertificateAuthority:
-    """
-    A minimal Certificate Authority that uses Ed25519 to sign certificates.
-    """
-
-    def __init__(self, ca_name: str):
-        """
-        Generate a new Ed25519 key pair for the CA.
-        
-        Args:
-            ca_name (str): The name of this CA (used as issuer_name).
-        """
-        self.ca_name = ca_name
-        self._private_key = SigningKey.generate()  # Generate CA signing key
-        self._public_key = VerifyingKey.from_signing_key(self._private_key)  # Corresponding public key
-
-    def issue_certificate(self, subject_name: str, subject_public_key: VerifyingKey) -> Certificate:
-        """
-        Issue a certificate by signing (subject_name || subject_public_key).
-
-        Args:
-            subject_name (str): The subject's name.
-            subject_public_key (VerifyingKey): The subject's Ed25519 public key.
-
-        Returns:
-            Certificate: A new certificate signed by this CA.
-        """
-        subject_key_bytes = subject_public_key.to_bytes()  # Convert public key to bytes
-        message = subject_name.encode('utf-8') + subject_key_bytes
-        signature = self._private_key.sign(message)
-
-        return Certificate(
-            subject_name=subject_name,
-            subject_key=subject_key_bytes,
-            issuer_name=self.ca_name,
-            signature=signature
-        )
-
-    def verify_certificate(self, certificate: Certificate) -> bool:
-        """
-        Verify a certificate that this CA issued. Checks the signature on
-        (subject_name || subject_public_key).
-
-        Args:
-            certificate (Certificate): The certificate to verify.
-
-        Returns:
-            bool: True if valid, False otherwise.
-        """
-        if certificate.issuer_name != self.ca_name:
-            return False  # Incorrect issuer
-
-        message = certificate.subject_name.encode('utf-8') + certificate.subject_key
-        try:
-            self._public_key.verify(message, certificate.signature)  # Verify using CA's public key
-            return True
-        except Exception:
-            return False
-
-    @property
-    def public_key(self) -> VerifyingKey:
-        """
-        Returns the CA's public key for distribution to clients.
-        """
-        return self._public_key
-
 
 # SIGMA Protocol
 # Implemented according to Slide 161 of the lecture notes, with some minor modifications.
@@ -174,6 +58,7 @@ class SigmaParty:
         # Session key established after SIGMA completes
         self.session_key: Optional[bytes] = None
         self.mac_key: Optional[bytes] = None
+        self.identity_key: Optional[bytes] = None
 
     def set_certificate(self, cert: Certificate):
         """
@@ -199,30 +84,6 @@ class SigmaParty:
             bytes: The raw signature.
         """
         return self._ed25519_private.sign(data)
-
-    def verify_certificate(self, certificate: Certificate) -> bool:
-        """
-        Verify a certificate using the CA's public key. Checks the signature
-        over (subject_name || subject_key).
-
-        Args:
-            certificate (Certificate): The certificate to verify.
-
-        Returns:
-            bool: True if valid, False otherwise.
-        """
-        # Convert stored public key bytes back into a VerifyingKey object
-        try:
-            verifier = VerifyingKey.from_bytes(certificate.subject_key)
-        except Exception:
-            return False  # Invalid key format
-
-        message = certificate.subject_name.encode('utf-8') + certificate.subject_key
-        try:
-            verifier.verify(message, certificate.signature)
-            return True
-        except Exception:
-            return False  # Signature verification failed
 
     def compute_shared_secret(self, peer_public_key: X25519PublicKey) -> bytes:
         """
@@ -303,9 +164,10 @@ class SigmaHandshake:
     - Ephemeral key exchange (X25519)
     - Signature verification (Ed25519)
     - Key derivation (kS for encryption, kM for authentication)
+    - Optionally, identity protection, which adds a third key kE, used to encrypt identities and signatures.
     """
 
-    def __init__(self, initiator: SigmaParty, responder: SigmaParty):
+    def __init__(self, initiator: SigmaParty, responder: SigmaParty, identity_protection: bool = False):
         """
         Initialize a SigmaHandshake between two parties.
 
@@ -315,6 +177,7 @@ class SigmaHandshake:
         """
         self.initiator = initiator
         self.responder = responder
+        self.identity_protection = identity_protection
 
         # Store ephemeral public keys
         self._initiator_ephemeral_pub: Optional[X25519PublicKey] = None
@@ -381,7 +244,7 @@ class SigmaHandshake:
 
         # Compute shared secret and derive keys
         assert self.responder._x25519_private is not None
-        sigma_keys = SigmaKeys.derive_from_dh(self.responder._x25519_private, ephemeral_pub_initiator)
+        sigma_keys = SigmaKeys.derive_from_dh(self.responder._x25519_private, ephemeral_pub_initiator, self.identity_protection)
         self.responder.session_key = sigma_keys.get_session_key()
         mac_key = sigma_keys.get_mac_key()
         self.responder.mac_key = mac_key # Needed so we don’t have to recompute it later, but only for responder
@@ -394,15 +257,36 @@ class SigmaHandshake:
         assert self.responder.certificate is not None
         mac_tag = compute_hmac(mac_key, self.responder.certificate.to_bytes())
 
-        response = {
-            "type": "SIGMA_RESP",
-            "ephemeral_pub_b64": b64e(ephemeral_pub_responder_bytes).decode("utf-8"),
-            "certificate": self.responder.certificate.to_dict(),
-            "signature_b64": b64e(signature_responder).decode("utf-8"),
-            "hmac_b64": b64e(mac_tag).decode("utf-8")
-        }
+    # Encrypt {cB, sigB, μB} using Ke only if identity protection is enabled
+        if self.identity_protection:
+            plaintext = json.dumps({
+                "certificate": self.responder.certificate.to_dict(),
+                "signature_b64": b64e(signature_responder).decode("utf-8"),
+                "hmac_b64": b64e(mac_tag).decode("utf-8")
+            }).encode("utf-8")
 
-        return json.dumps(response).encode('utf-8')
+            encryption_key = sigma_keys.get_identity_key()
+            self.responder.identity_key = encryption_key
+            nonce = os.urandom(12)
+            cipher = Cipher(algorithms.AES(encryption_key), modes.GCM(nonce))
+            encryptor = cipher.encryptor()
+            ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+
+            return json.dumps({
+                "type": "SIGMA_RESP",
+                "ephemeral_pub_b64": b64e(ephemeral_pub_responder_bytes).decode("utf-8"),
+                "nonce_b64": b64e(nonce).decode("utf-8"),
+                "ciphertext_b64": b64e(ciphertext).decode("utf-8"),
+                "tag_b64": b64e(encryptor.tag).decode("utf-8")
+            }).encode("utf-8")
+        else:
+            return json.dumps({
+                "type": "SIGMA_RESP",
+                "ephemeral_pub_b64": b64e(ephemeral_pub_responder_bytes).decode("utf-8"),
+                "certificate": self.responder.certificate.to_dict(),
+                "signature_b64": b64e(signature_responder).decode("utf-8"),
+                "hmac_b64": b64e(mac_tag).decode("utf-8")
+            }).encode("utf-8")
 
     def process_response_message(self, message: bytes) -> bytes:
         """
@@ -413,6 +297,8 @@ class SigmaHandshake:
         - Sign (g^x || g^y) -> σA
         - Compute MAC(kM, cA) -> μA
         - Send {cA, σA, μA}
+        - Optionally, if identity protection is enabled, we also compute kE and decrypt the responder's identity, signature, and MAC.
+        - We then also encrypt our identity, signature, and MAC before sending it.
         """
         data = json.loads(message.decode('utf-8'))
         if data.get("type") != "SIGMA_RESP":
@@ -422,17 +308,40 @@ class SigmaHandshake:
         ephemeral_pub_responder_bytes = b64d(data["ephemeral_pub_b64"])
         ephemeral_pub_responder = X25519PublicKey.from_bytes(ephemeral_pub_responder_bytes)
         self._responder_ephemeral_pub = ephemeral_pub_responder
-
-        # Extract responder's cert, signature, and MAC
-        responder_cert = Certificate.from_dict(data["certificate"])
-        signature_responder = b64d(data["signature_b64"])
-        mac_tag = b64d(data["hmac_b64"])
-
+        
         # Compute shared secret and derive kS, kM
         assert self.initiator._x25519_private is not None
-        sigma_keys = SigmaKeys.derive_from_dh(self.initiator._x25519_private, ephemeral_pub_responder)
+        sigma_keys = SigmaKeys.derive_from_dh(self.initiator._x25519_private, ephemeral_pub_responder, self.identity_protection)
         self.initiator.session_key = sigma_keys.get_session_key()
         mac_key = sigma_keys.get_mac_key()
+        # We don’t need to store the mac key for the responder, only the initiator
+
+        # Extract responder's cert, signature, and MAC
+        if self.identity_protection:
+            try:
+                # Decrypt responder's identity
+                nonce = b64d(data["nonce_b64"])
+                ciphertext = b64d(data["ciphertext_b64"])
+                tag = b64d(data["tag_b64"])
+
+                encryption_key = sigma_keys.get_identity_key()
+                # We also don’t need to store the identity key for the responder as it isn’t used again
+                # Decrypt the ciphertext
+                cipher = Cipher(algorithms.AES(encryption_key), modes.GCM(nonce, tag))
+                decryptor = cipher.decryptor()
+                decrypted_data = decryptor.update(ciphertext) + decryptor.finalize()
+                decrypted_json = json.loads(decrypted_data)
+
+                responder_cert = Certificate.from_dict(decrypted_json["certificate"])
+                signature_responder = b64d(decrypted_json["signature_b64"])
+                mac_tag = b64d(decrypted_json["hmac_b64"])
+            except Exception:
+                raise ValueError("Decryption failed: Encrypted identity or signature verification failed.")
+        else:
+            responder_cert = Certificate.from_dict(data["certificate"])
+            signature_responder = b64d(data["signature_b64"])
+            mac_tag = b64d(data["hmac_b64"])
+
 
         # Verify MAC(kM, cB)
         if not hmac_compare(mac_tag, compute_hmac(mac_key, responder_cert.to_bytes())):
@@ -452,13 +361,35 @@ class SigmaHandshake:
         assert self.initiator.certificate is not None
         mac_tag_final = compute_hmac(mac_key, self.initiator.certificate.to_bytes())
 
-        # Send final message
-        return json.dumps({
-            "type": "SIGMA_FINAL",
+        if self.identity_protection:
+            # Encrypt the final message under Ke
+            nonce_final = os.urandom(12)  # Generate a fresh nonce
+            cipher_final = Cipher(algorithms.AES(encryption_key), modes.GCM(nonce_final))
+            encryptor_final = cipher_final.encryptor()
+            
+            final_message = json.dumps({
             "certificate": self.initiator.certificate.to_dict(),
             "signature_b64": b64e(signature_initiator).decode("utf-8"),
             "hmac_b64": b64e(mac_tag_final).decode("utf-8")
-        }).encode("utf-8")
+                }).encode("utf-8")
+            
+            ciphertext_final = encryptor_final.update(final_message) + encryptor_final.finalize()
+
+            # Return the encrypted final message
+            return json.dumps({
+                "type": "SIGMA_FINAL",
+                "ciphertext_b64": b64e(ciphertext_final).decode("utf-8"),
+                "nonce_b64": b64e(nonce_final).decode("utf-8"),
+                "tag_b64": b64e(encryptor_final.tag).decode("utf-8")
+            }).encode("utf-8")
+        else:
+            # If identity protection is disabled, return in plaintext
+            return json.dumps({
+                "type": "SIGMA_FINAL",
+                "certificate": self.initiator.certificate.to_dict(),
+                "signature_b64": b64e(signature_initiator).decode("utf-8"),
+                "hmac_b64": b64e(mac_tag_final).decode("utf-8")
+            }).encode("utf-8")
 
     def finalize_handshake(self, message: bytes) -> bytes:
         """
@@ -468,9 +399,29 @@ class SigmaHandshake:
         - Return kS if all checks pass
         """
         data = json.loads(message.decode('utf-8'))
-        signature_initiator = b64d(data["signature_b64"])
-        mac_tag = b64d(data["hmac_b64"])
-        initiator_cert = Certificate.from_dict(data["certificate"])
+        
+        if self.identity_protection:
+            # Extract encrypted fields
+            encrypted_data = b64d(data["ciphertext_b64"])
+            nonce = b64d(data["nonce_b64"])
+            tag = b64d(data["tag_b64"])
+
+            assert self.responder.identity_key is not None
+            cipher = Cipher(algorithms.AES(self.responder.identity_key), modes.GCM(nonce, tag))
+            decryptor = cipher.decryptor()
+            try:
+                decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
+                decrypted_json = json.loads(decrypted_data)
+            except Exception:
+                raise ValueError("Decryption failed: Could not verify initiator's identity.")
+
+            signature_initiator = b64d(decrypted_json["signature_b64"])
+            mac_tag = b64d(decrypted_json["hmac_b64"])
+            initiator_cert = Certificate.from_dict(decrypted_json["certificate"])
+        else:
+            signature_initiator = b64d(data["signature_b64"])
+            mac_tag = b64d(data["hmac_b64"])
+            initiator_cert = Certificate.from_dict(data["certificate"])
 
         # Verify MAC(kM, cA)
         assert self.responder.mac_key is not None
@@ -488,7 +439,7 @@ class SigmaHandshake:
         assert self.responder.session_key is not None
         return self.responder.session_key
 
-# This devaites from lecture notes as I chose to use a HKDF instead of just hashing the shared secret with 
+# This deviates from lecture notes as I chose to use a HKDF instead of just hashing the shared secret with 
 # domain separation strings. I also use slightly longer domain separation strings.
 class SigmaKeys:
     """
@@ -497,19 +448,22 @@ class SigmaKeys:
     This class ensures that:
     - kS (session key for encryption)
     - kM (MAC key for authentication)
+    - Optionally kE (key for identity protection)
 
     Are properly derived using HKDF from the shared secret.
     """
 
-    def __init__(self, shared_secret: bytes, salt: bytes = b""):
+    def __init__(self, shared_secret: bytes, salt: bytes = b"", identity_protection: bool = False):
         """
         Derives two distinct 32-byte keys:
         - kS: The session key (for encryption)
         - kM: The MAC key (for authentication)
+        - Optionally, kE: The key for identity protection
 
         Args:
             shared_secret (bytes): The raw X25519 shared secret (32 bytes).
             salt (bytes): Optional salt for HKDF (defaults to empty).
+            identity_protection (bool): Whether to derive an identity key (kE).
         """
         self.kS = HKDF(
             algorithm=hashes.SHA256(),
@@ -524,6 +478,16 @@ class SigmaKeys:
             salt=salt,
             info=b"SIGMA-MAC-key"
         ).derive(shared_secret)
+        
+        # Ensure kE is initialized only when identity protection is enabled
+        self.kE = None
+        if identity_protection:
+            self.kE = HKDF(
+                algorithm=hashes.SHA256(),
+                length=32,  # 32-byte AES-256 key
+                salt=salt,
+                info=b"SIGMA-identity-key"
+            ).derive(shared_secret)
 
     def get_session_key(self) -> bytes:
         """Returns kS (session key for encryption)."""
@@ -532,9 +496,15 @@ class SigmaKeys:
     def get_mac_key(self) -> bytes:
         """Returns kM (MAC key for authentication)."""
         return self.kM
+    
+    def get_identity_key(self) -> bytes:
+        """Returns kE (key for identity protection)."""
+        if self.kE is None:
+            raise ValueError("Identity protection is not enabled, but get_identity_key() was called.")
+        return self.kE
 
     @staticmethod
-    def derive_from_dh(alice_private: "X25519PrivateKey", bob_public: "X25519PublicKey") -> "SigmaKeys":
+    def derive_from_dh(alice_private: "X25519PrivateKey", bob_public: "X25519PublicKey", identity_protection: bool = False) -> "SigmaKeys":
         """
         Given an X25519 private key and a peer's public key, perform the key exchange
         and derive both the session key (kS) and MAC key (kM).
@@ -547,7 +517,7 @@ class SigmaKeys:
             SigmaKeys: An instance containing the derived session & MAC keys.
         """
         shared_secret = alice_private.exchange(bob_public)  # Get raw DH output
-        return SigmaKeys(shared_secret)  # Derive keys using HKDF
+        return SigmaKeys(shared_secret, identity_protection=identity_protection)
 
 
 class SecureChannel:
@@ -560,19 +530,25 @@ class SecureChannel:
         mac_key (bytes): The MAC key (kM) for HMAC authentication.
     """
 
-    def __init__(self, session_key: bytes, mac_key: bytes):
+    def __init__(self, session_key: bytes):
         """
         Initialize the secure channel with pre-established keys.
 
         Args:
             session_key (bytes): 32-byte AES-256 key for encryption.
-            mac_key (bytes): 32-byte key for HMAC authentication.
         """
-        if len(session_key) != 32 or len(mac_key) != 32:
-            raise ValueError("Both session_key and mac_key must be 32 bytes long.")
+        if len(session_key) != 32:
+            raise ValueError("session_key must be 32 bytes long.")
 
         self.session_key = session_key
-        self.mac_key = mac_key
+        
+        # Derive a new MAC key (kM') from the session key
+        self.mac_key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,  # 32-byte MAC key for secure messaging
+            salt=None,
+            info=b"SecureChannel-MAC-Key"
+        ).derive(session_key)
 
     def _encrypt(self, plaintext: bytes) -> bytes:
         """
@@ -617,9 +593,7 @@ class SecureChannel:
         Returns:
             bytes: The 32-byte HMAC tag.
         """
-        h = hmac.HMAC(self.mac_key, hashes.SHA256())
-        h.update(data)
-        return h.finalize()
+        return compute_hmac(self.mac_key, data)
 
     def send_message(self, plaintext: bytes) -> bytes:
         """
@@ -675,10 +649,12 @@ class SecureChannel:
         Returns:
             bool: True if the strings are equal, False otherwise.
         """
-        return compare_digest(a, b)
+        return hmac_compare(a, b)
 
 
-def main():
+def main(identity_protection: bool = False):
+    print("\n=== Running SIGMA Handshake (Identity Protection: {}) ===".format(identity_protection))
+
     # Step 1: Setup CA and create parties
     ca = CertificateAuthority("TestCA")
     ca_public_key = ca.public_key
@@ -696,42 +672,43 @@ def main():
     bob.set_certificate(bob_cert)
 
     # Step 2: Perform the SIGMA handshake between Alice (initiator) and Bob (responder)
-    handshake = SigmaHandshake(alice, bob)
+    handshake = SigmaHandshake(alice, bob, identity_protection=identity_protection)
 
     # --- Handshake Step 1: Initiator sends SIGMA_INIT
     sigma_init_msg = handshake.create_initiation_message()
-    print("SIGMA_INIT message from Alice:")
+    print("SIGMA_INIT message from Alice (plaintext):")
     print(sigma_init_msg.decode())
 
     # --- Handshake Step 2: Responder processes SIGMA_INIT and sends SIGMA_RESP
     sigma_resp_msg = handshake.handle_initiation_message(sigma_init_msg)
-    print("\nSIGMA_RESP message from Bob:")
+    print("SIGMA_RESP message from Bob:")
+    if identity_protection:
+        print("(Encrypted)")
     print(sigma_resp_msg.decode())
 
     # --- Handshake Step 3: Initiator processes SIGMA_RESP and sends SIGMA_FINAL
     sigma_final_msg = handshake.process_response_message(sigma_resp_msg)
-    print("\nSIGMA_FINAL message from Alice:")
+    print("SIGMA_FINAL message from Alice:")
+    if identity_protection:
+        print("(Encrypted)")
     print(sigma_final_msg.decode())
 
     # --- Handshake Step 4: Responder finalizes the handshake
     session_key = handshake.finalize_handshake(sigma_final_msg)
     print("\nHandshake complete.")
+    assert alice.session_key is not None
+    assert bob.session_key is not None
     print("Bob's session key:", session_key.hex())
     print("Alice's session key:", alice.session_key.hex())
 
-    # At this point, both parties share the same session key.
-    # Bob’s MAC key was stored in handshake.responder.mac_key.
-    
     # Step 3: Secure Messaging using SecureChannel
-    # For demonstration, create secure channels for both parties.
-    # (In a real protocol, both sides would derive the same keys.)
-    secure_channel_alice = SecureChannel(alice.session_key, handshake.responder.mac_key)
-    secure_channel_bob = SecureChannel(bob.session_key, bob.mac_key)
+    secure_channel_alice = SecureChannel(alice.session_key)
+    secure_channel_bob = SecureChannel(bob.session_key)
 
     # Alice sends a secure message to Bob.
     plaintext = b"Hello Bob, this is a secret message from Alice!"
     encrypted_message = secure_channel_alice.send_message(plaintext)
-    print("\nEncrypted message from Alice:")
+    print("\nEncrypted message from Alice to Bob:")
     print(encrypted_message.decode())
 
     # Bob receives and decrypts the message.
@@ -739,5 +716,15 @@ def main():
     print("\nDecrypted message at Bob:")
     print(decrypted_message.decode())
 
+
 if __name__ == "__main__":
-    main()
+    # Run both standard SIGMA and SIGMA-I (Identity Protection)
+    print("\n=====================================")
+    print("RUNNING SIGMA HANDSHAKE WITHOUT IDENTITY PROTECTION")
+    print("=====================================")
+    main(identity_protection=False)
+
+    print("\n=====================================")
+    print("RUNNING SIGMA-I (IDENTITY PROTECTION ENABLED)")
+    print("=====================================")
+    main(identity_protection=True)

@@ -1,0 +1,23 @@
+         148 function calls in 0.000 seconds
+
+   Ordered by: cumulative time
+   List reduced from 57 to 15 due to restriction <15>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 benchmark_spake2.py:143(<lambda>)
+        1    0.000    0.000    0.000    0.000 spake.py:306(send_message)
+        1    0.000    0.000    0.000    0.000 spake.py:259(_encrypt)
+        1    0.000    0.000    0.000    0.000 spake.py:325(receive_message)
+        1    0.000    0.000    0.000    0.000 spake.py:275(_decrypt)
+        1    0.000    0.000    0.000    0.000 base.py:106(encryptor)
+        1    0.000    0.000    0.000    0.000 {built-in method ciphers.create_encryption_ctx}
+        2    0.000    0.000    0.000    0.000 spake.py:292(_compute_hmac)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 __init__.py:183(dumps)
+        2    0.000    0.000    0.000    0.000 base.py:78(__init__)
+        1    0.000    0.000    0.000    0.000 encoder.py:183(encode)
+        1    0.000    0.000    0.000    0.000 decoder.py:340(decode)
+        1    0.000    0.000    0.000    0.000 {built-in method posix.urandom}
+        1    0.000    0.000    0.000    0.000 cProfile.py:121(__exit__)
+
+

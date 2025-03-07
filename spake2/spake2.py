@@ -2,7 +2,7 @@ import os
 import hashlib
 import json
 import base64
-from typing import Tuple
+from typing import Tuple, Optional
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -51,24 +51,9 @@ def b64e(data: bytes) -> bytes:
 def b64d(data: bytes) -> bytes:
     return base64.b64decode(data)
 
-def compute_transcript(id_A: str, id_B: str, pA: bytes, pB: bytes, K: bytes, w: int) -> bytes:
-    """
-    Constructs the canonical protocol transcript TT as:
-        TT = encode_with_length(id_A) || encode_with_length(id_B) ||
-            encode_with_length(pA) || encode_with_length(pB) ||
-            encode_with_length(K)  || encode_with_length(w)
-    where w is encoded as a 32-byte big-endian integer.
-    """
-    return (
-        encode_with_length(id_A.encode()) +
-        encode_with_length(id_B.encode()) +
-        encode_with_length(pA) +
-        encode_with_length(pB) +
-        encode_with_length(K) +
-        encode_with_length(w.to_bytes(32, "big"))
-    )
-
-
+# This is the SPAKE2 implementation for Assignment 2.
+# It includes the SPAKE2 protocol, the handshake, and a secure channel for messaging.
+# The SecureChannel class is pretty much identical to the one in SIGMA.
 # --- SPAKE2 Implementation ---
 class SPAKE2Party:
     """
@@ -93,6 +78,16 @@ class SPAKE2Party:
         self.base = M if use_m else N
         # Compute public message: p = X + w * base
         self.pi = self.compute_public_message()
+        
+        # Define "A" if we're using M, "B" if we're using N.
+        self.role = "A" if use_m else "B"
+        
+        # Store peer values (to be set during handshake)
+        self.peer_pi: Optional[bytes] = None  # Peer’s public message
+        self.peer_name: Optional[str] = None  # Peer’s name
+        self.shared_secret: Optional[bytes] = None  # Shared key
+        self.peer_confirmation: Optional[bytes] = None  # Confirmation MAC
+
 
     def compute_public_message(self) -> bytes:
         """
@@ -111,7 +106,7 @@ class SPAKE2Party:
         pi = edwards_point_add_extended(X_point, adjustment)
         return encode_edwards_point(pi)
 
-    def compute_shared_secret(self, peer_pi: bytes) -> bytes:
+    def compute_shared_secret(self) -> bytes:
         """
         Computes the shared secret K.
         For party A: K = 8 * x * (pB - w*N)
@@ -119,8 +114,11 @@ class SPAKE2Party:
         Here, x (or y) is the ephemeral scalar generated in __init__.
         The result is hashed (via SHA-256).
         """
+        if self.peer_pi is None:
+            raise ValueError("Peer public message not received yet!")
+
         scalar = self.x  # Use the ephemeral scalar generated at initialization.
-        peer_point = decode_edwards_point(peer_pi)
+        peer_point = decode_edwards_point(self.peer_pi)
         if not is_valid_edwards_point(peer_point):
             raise ValueError("Received point is not in the correct subgroup")
         
@@ -136,15 +134,44 @@ class SPAKE2Party:
         # Multiply by 8 to clear the cofactor. 
         # Same as raising to hx, where h = 8
         K_point = edwards_scalar_mult(8 * scalar, adjusted_peer)
-        return hashlib.sha256(encode_edwards_point(K_point)).digest()
+        self.shared_secret = hashlib.sha256(encode_edwards_point(K_point)).digest()
+        return self.shared_secret
 
-    def key_schedule(self, transcript: bytes) -> Tuple[bytes, bytes, bytes, bytes]:
+    def compute_transcript(self) -> bytes:
+        """
+        Computes the protocol transcript TT using the stored values.
+
+        RFC 9382 defines the order as:
+            TT = len(A) || A || len(B) || B || len(pA) || pA || len(pB) || pB || len(K) || K || len(w) || w
+        """
+        if self.peer_name is None or self.peer_pi is None or self.shared_secret is None:
+            raise ValueError("Cannot compute transcript before receiving peer's message and computing shared secret.")
+
+        # Ensure A is always first and B second
+        if self.role == "A":
+            name_A, pi_A = self.name, self.pi
+            name_B, pi_B = self.peer_name, self.peer_pi
+        else:
+            name_A, pi_A = self.peer_name, self.peer_pi
+            name_B, pi_B = self.name, self.pi
+
+        return (
+            encode_with_length(name_A.encode()) +
+            encode_with_length(name_B.encode()) +
+            encode_with_length(pi_A) +
+            encode_with_length(pi_B) +
+            encode_with_length(self.shared_secret) +
+            encode_with_length(self.w.to_bytes(32, "big"))
+        )
+
+    def key_schedule(self) -> Tuple[bytes, bytes, bytes, bytes]:
         """
         Derives the key material from the transcript.
         Let Hash(TT) = Ke || Ka, where each is 16 bytes (for a 32-byte hash).
         Then derive confirmation keys via HKDF from Ka.
         Returns (Ke, Ka, KcA, KcB).
         """
+        transcript = self.compute_transcript()
         hash_tt = hashlib.sha256(transcript).digest()
         Ke = hash_tt[:16]
         Ka = hash_tt[16:32]
@@ -152,31 +179,52 @@ class SPAKE2Party:
         derived = kdf.derive(Ka)
         KcA, KcB = derived[:16], derived[16:]
         return Ke, Ka, KcA, KcB
+    
+    def store_peer_confirmation(self, peer_conf: bytes):
+        """
+        Stores the confirmation message received from the peer.
+        """
+        self.peer_confirmation = peer_conf
+    
+    def receive_peer_message(self, peer_pi: bytes, peer_name: str):
+        """
+        Stores the received public message and peer's name.
+        This should be called when the other party's public message is received.
+        """
+        self.peer_pi = peer_pi
+        self.peer_name = peer_name
 
-    def generate_confirmation(self, Kc: bytes, transcript: bytes) -> bytes:
+
+    def generate_confirmation(self, Kc: bytes) -> bytes:
         """
         Generates a confirmation MAC over the transcript using HMAC-SHA256.
         """
+        transcript = self.compute_transcript()
         return built_in_hmac.new(Kc, transcript, hashlib.sha256).digest()
 
-    def verify_confirmation(self, received_mac: bytes, Kc: bytes, transcript: bytes) -> bool:
+    def verify_peer_confirmation(self, Kc: bytes) -> bool:
         """
-        Verifies the confirmation MAC.
+        Verifies the confirmation MAC received from the peer.
         """
-        expected = built_in_hmac.new(Kc, transcript, hashlib.sha256).digest()
-        return built_in_hmac.compare_digest(received_mac, expected)
+        if self.peer_confirmation is None:
+            raise ValueError("No peer confirmation received!")
 
-class SpakeHandshake:
+        transcript = self.compute_transcript()
+        expected = built_in_hmac.new(Kc, transcript, hashlib.sha256).digest()
+        return built_in_hmac.compare_digest(self.peer_confirmation, expected)
+
+class SPAKE2Handshake:
     """
     Orchestrates the SPAKE2 handshake between two parties.
-    
+
     The flow is:
-        1. Exchange public messages (p_A and p_B).
+        1. Exchange public messages (pA and pB).
         2. Each computes the shared secret K.
         3. Both parties compute the transcript TT.
         4. A key schedule is performed to derive Ke, Ka, KcA, KcB.
         5. Parties exchange confirmation MACs.
     """
+
     def __init__(self, initiator: SPAKE2Party, responder: SPAKE2Party):
         self.initiator = initiator
         self.responder = responder
@@ -184,52 +232,55 @@ class SpakeHandshake:
     def run_handshake(self) -> Tuple[bytes, bytes]:
         """
         Executes the full handshake.
+
         Returns:
             - Ke: The shared secret key for the protocol.
             - transcript: The protocol transcript.
         """
-        # Round 1: Exchange public messages
-        pA = self.initiator.pi
-        pB = self.responder.pi
+        # Step 1: Exchange public messages
+        pA, pB = self.initiator.pi, self.responder.pi
 
-        # Each computes the shared secret
-        K_A = self.initiator.compute_shared_secret(pB)
-        K_B = self.responder.compute_shared_secret(pA)
+        # Store peer's info in both parties
+        self.initiator.receive_peer_message(pB, self.responder.name)
+        self.responder.receive_peer_message(pA, self.initiator.name)
+
+        # Step 2: Compute shared secret
+        K_A = self.initiator.compute_shared_secret()
+        K_B = self.responder.compute_shared_secret()
+
         if K_A != K_B:
             raise ValueError("Shared secret mismatch!")
-        K = K_A
+        
+        # Step 3: Compute transcript (each party does it individually)
+        transcript_A = self.initiator.compute_transcript()
+        transcript_B = self.responder.compute_transcript()
 
-        # Check that both parties derived the same w from the password.
-        if self.initiator.w != self.responder.w:
-            raise ValueError("Password-derived scalar mismatch!")
-        w = self.initiator.w
+        if transcript_A != transcript_B:
+            raise ValueError("Transcript mismatch!")
 
-        # Use fixed roles: initiator is A, responder is B.
-        id_A = self.initiator.name
-        id_B = self.responder.name
+        transcript = transcript_A  # Either one works, since they are equal
 
-        # Compute the canonical transcript using the global helper.
-        # Even though the protocol says they should both compute the transcript,
-        # we can get away with doing it once as we check for equality of w and K above.
-        # Also for pA and pB, we compute the shared secret and check that.
-        transcript = compute_transcript(id_A, id_B, pA, pB, K, w)
+        # Step 4: Derive keys from the transcript
+        Ke_A, Ka_A, KcA_A, KcB_A = self.initiator.key_schedule()
+        Ke_B, Ka_B, KcA_B, KcB_B = self.responder.key_schedule()
 
-
-        # Derive keys from the transcript.
-        Ke_A, Ka_A, KcA_A, KcB_A = self.initiator.key_schedule(transcript)
-        Ke_B, Ka_B, KcA_B, KcB_B = self.responder.key_schedule(transcript)
         if Ke_A != Ke_B:
             raise ValueError("Ke mismatch!")
-        
-        # Exchange confirmation messages.
-        conf_A = self.initiator.generate_confirmation(KcA_A, transcript)
-        conf_B = self.responder.generate_confirmation(KcB_B, transcript)
-        
-        if not self.responder.verify_confirmation(conf_A, KcA_A, transcript):
+
+        # Step 5: Exchange confirmation messages
+        conf_A = self.initiator.generate_confirmation(KcA_A)
+        conf_B = self.responder.generate_confirmation(KcB_B)
+
+        # Store peer's confirmation messages
+        self.initiator.store_peer_confirmation(conf_B)
+        self.responder.store_peer_confirmation(conf_A)
+
+        # Verify confirmations
+        if not self.responder.verify_peer_confirmation(KcA_A):
             raise ValueError("Initiator confirmation failed!")
-        if not self.initiator.verify_confirmation(conf_B, KcB_B, transcript):
+        if not self.initiator.verify_peer_confirmation(KcB_B):
             raise ValueError("Responder confirmation failed!")
-        
+
         return Ke_A, transcript
 
 class SecureChannel:
@@ -242,19 +293,25 @@ class SecureChannel:
         mac_key (bytes): The MAC key (kM) for HMAC authentication.
     """
 
-    def __init__(self, session_key: bytes, mac_key: bytes):
+    def __init__(self, session_key: bytes):
         """
         Initialize the secure channel with pre-established keys.
 
         Args:
             session_key (bytes): 32-byte AES-256 key for encryption.
-            mac_key (bytes): 32-byte key for HMAC authentication.
         """
-        if len(session_key) != 32 or len(mac_key) != 32:
-            raise ValueError("Both session_key and mac_key must be 32 bytes long.")
+        if len(session_key) != 32:
+            raise ValueError("session_key must be 32 bytes long.")
 
         self.session_key = session_key
-        self.mac_key = mac_key
+        
+        # Derive a new MAC key (kM') from the session key
+        self.mac_key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,  # 32-byte MAC key for secure messaging
+            salt=None,
+            info=b"SecureChannel-MAC-Key"
+        ).derive(session_key)
 
     def _encrypt(self, plaintext: bytes) -> bytes:
         """
@@ -359,7 +416,7 @@ class SecureChannel:
         """
         return built_in_hmac.compare_digest(a, b)
 
-def spake2_demo():
+def SPAKE2_demo():
     password = b"securepassword"
     
     # Create SPAKE2 parties
@@ -367,20 +424,18 @@ def spake2_demo():
     bob = SPAKE2Party("Bob", password, use_m=False)
     
     # Perform the handshake
-    handshake = SpakeHandshake(alice, bob)
+    handshake = SPAKE2Handshake(alice, bob)
     shared_secret, transcript = handshake.run_handshake()
     
     print("SPAKE2 Handshake Completed!")
     print("Shared secret Ke:", shared_secret.hex())
     
     # Derive keys for secure channel from shared_secret using HKDF.
-    kdf = HKDF(algorithm=HKDF_HASH, length=64, salt=None, info=b"SecureChannel")
-    derived_keys = kdf.derive(shared_secret)
-    session_key = derived_keys[:32]
-    mac_key = derived_keys[32:]
+    kdf = HKDF(algorithm=HKDF_HASH, length=32, salt=None, info=b"SecureChannel")
+    session_key = kdf.derive(shared_secret)
     
-    secure_channel_alice = SecureChannel(session_key, mac_key)
-    secure_channel_bob = SecureChannel(session_key, mac_key)
+    secure_channel_alice = SecureChannel(session_key)
+    secure_channel_bob = SecureChannel(session_key)
     
     plaintext = b"Hello Bob, this is a secret message from Alice via SPAKE2!"
     encrypted_msg = secure_channel_alice.send_message(plaintext)
@@ -391,4 +446,4 @@ def spake2_demo():
     print("Decrypted message:", decrypted_msg.decode())
 
 if __name__ == "__main__":
-    spake2_demo()
+    SPAKE2_demo()

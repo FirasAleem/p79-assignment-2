@@ -1,148 +1,143 @@
-import time
+import timeit
 import statistics
 import os
-import base64
+import cProfile
+import pstats
+from spake2.spake2 import SPAKE2Party, SPAKE2Handshake, SecureChannel 
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
 
-from spake.spake import SPAKE2Party, SpakeHandshake, SecureChannel
+# Ensure output directory exists
+OUTPUT_DIR = "benchmarking/profiling_results"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Alias for base64 encoding/decoding
-b64e = base64.b64encode
-b64d = base64.b64decode
+# Global password for SPAKE2 benchmarking
+PASSWORD = b"securepassword"
 
-def benchmark_spake2_handshake(num_iter: int = 100, warmup: int = 10) -> None:
+def print_results(name, times, num_iter):
     """
-    Benchmark the SPAKE2 handshake over num_iter iterations,
-    with a warm-up phase of 'warmup' iterations.
-    Measures total handshake time and prints average, median, standard deviation,
-    min, and max durations.
+    Prints benchmarking results including mean, median, p90, and p99 latencies.
+    Reports time per single operation.
     """
-    password = b"benchmark_password"
+    avg_time = statistics.mean(times) / num_iter  
+    median_time = statistics.median(times) / num_iter  
+    stdev_time = statistics.stdev(times) / num_iter if len(times) > 1 else 0
+    min_time = min(times) / num_iter  
+    max_time = max(times) / num_iter  
+    p90 = statistics.quantiles(times, n=10)[8] / num_iter  
+    p99 = statistics.quantiles(times, n=100)[98] / num_iter  
 
+    print(f"{name} benchmark over {num_iter} iterations:")
+    print(f"  Average time per operation: {avg_time:.9f} sec")
+    print(f"  Median time per operation:  {median_time:.9f} sec")
+    print(f"  Std deviation per operation: {stdev_time:.9f} sec")
+    print(f"  Min time per operation:     {min_time:.9f} sec, Max time per operation: {max_time:.9f} sec")
+    print(f"  P90 latency per operation:  {p90:.9f} sec, P99 latency per operation: {p99:.9f} sec\n")
+
+def profile_function(func, output_file):
+    profile_path = os.path.join(OUTPUT_DIR, f"{output_file}.prof")
+    txt_output_path = os.path.join(OUTPUT_DIR, f"{output_file}.txt")
+
+    with cProfile.Profile() as pr:
+        func()  
+
+    # Save profiling stats
+    pr.dump_stats(profile_path)
+
+    # Save readable output
+    with open(txt_output_path, "w") as f:
+        stats = pstats.Stats(pr, stream=f)
+        stats.strip_dirs().sort_stats("cumulative").print_stats(15)
+
+    print(f"Profiling results saved: {profile_path} & {txt_output_path}")
+
+def setup_spake2():
+    alice = SPAKE2Party("Alice", PASSWORD, use_m=True)
+    bob = SPAKE2Party("Bob", PASSWORD, use_m=False)
+    return SPAKE2Handshake(alice, bob)
+
+def run_spake2_handshake():
+    handshake = setup_spake2()
+    return handshake.run_handshake()
+
+
+def benchmark_spake2_handshake(num_iter=100, warmup=10):
+    """
+    Benchmarks the SPAKE2 handshake execution time.
+    """
     # Warm-up phase
     for _ in range(warmup):
-        alice = SPAKE2Party("Alice", password, use_m=True)
-        bob = SPAKE2Party("Bob", password, use_m=False)
-        handshake = SpakeHandshake(alice, bob)
-        _ = handshake.run_handshake()
+        run_spake2_handshake()
 
-    durations = []
-    for _ in range(num_iter):
-        alice = SPAKE2Party("Alice", password, use_m=True)
-        bob = SPAKE2Party("Bob", password, use_m=False)
-        handshake = SpakeHandshake(alice, bob)
+    # Benchmarking
+    times = timeit.repeat(run_spake2_handshake, repeat=5, number=num_iter)
+    print_results("SPAKE2 Handshake", times, num_iter)
 
-        start = time.perf_counter()
-        _ = handshake.run_handshake()
-        end = time.perf_counter()
-
-        durations.append(end - start)
-
-    avg_time = statistics.mean(durations)
-    median_time = statistics.median(durations)
-    stdev_time = statistics.stdev(durations) if len(durations) > 1 else 0
-    min_time = min(durations)
-    max_time = max(durations)
-
-    print(f"SPAKE2 handshake benchmark over {num_iter} iterations:")
-    print(f"  Average time: {avg_time:.6f} sec")
-    print(f"  Median time:  {median_time:.6f} sec")
-    print(f"  Std deviation: {stdev_time:.6f} sec")
-    print(f"  Min time:     {min_time:.6f} sec, Max time: {max_time:.6f} sec")
-
-
-def benchmark_secure_channel(num_iter: int = 1000, warmup: int = 100) -> None:
+def benchmark_spake2_key_exchange(num_iter=1000):
     """
-    Benchmark the SPAKE2 secure channel round-trip (encryption + decryption)
-    over num_iter iterations, with warmup iterations.
-    Reports average, median, standard deviation, min, and max durations.
+    Benchmarks SPAKE2 key exchange (shared secret computation).
     """
-    session_key = os.urandom(32)
-    mac_key = os.urandom(32)
-    channel = SecureChannel(session_key, mac_key)
-    message = b"Benchmark test message for secure channel."
+    alice = SPAKE2Party("Alice", PASSWORD, use_m=True)
+    bob = SPAKE2Party("Bob", PASSWORD, use_m=False)
+    alice.receive_peer_message(bob.pi, "Bob")
+
+    times = timeit.repeat(lambda: alice.compute_shared_secret(), repeat=5, number=num_iter)
+    print_results("SPAKE2 Key Exchange", times, num_iter)
+
+
+def setup_secure_channel():
+    """
+    Sets up a SecureChannel by deriving keys from the SPAKE2 handshake.
+    """
+    handshake = setup_spake2()
+    shared_secret, _ = handshake.run_handshake()
+
+    # Derive session & MAC keys
+    kdf = HKDF(algorithm=hashes.SHA256(), length=64, salt=None, info=b"SecureChannel")
+    derived_keys = kdf.derive(shared_secret)
+    session_key, mac_key = derived_keys[:32], derived_keys[32:]
+
+    return SecureChannel(session_key)
+
+def benchmark_secure_channel(num_iter=1000, warmup=100):
+    """
+    Benchmarks SecureChannel encryption and decryption.
+    """
+    channel = setup_secure_channel()
+    message = b"Performance test message for secure channel."
 
     # Warm-up phase
     for _ in range(warmup):
         encrypted = channel.send_message(message)
         _ = channel.receive_message(encrypted)
 
-    durations = []
-    for _ in range(num_iter):
-        start = time.perf_counter()
-        encrypted = channel.send_message(message)
-        decrypted = channel.receive_message(encrypted)
-        end = time.perf_counter()
-
-        assert decrypted == message  # Ensure correctness
-        durations.append(end - start)
-
-    avg_time = statistics.mean(durations)
-    median_time = statistics.median(durations)
-    stdev_time = statistics.stdev(durations) if len(durations) > 1 else 0
-    min_time = min(durations)
-    max_time = max(durations)
-
-    print(f"SPAKE2 secure channel benchmark over {num_iter} iterations:")
-    print(f"  Average time: {avg_time:.6f} sec")
-    print(f"  Median time:  {median_time:.6f} sec")
-    print(f"  Std deviation: {stdev_time:.6f} sec")
-    print(f"  Min time:     {min_time:.6f} sec, Max time: {max_time:.6f} sec")
-
-
-def benchmark_message_size_effect():
-    """
-    Benchmark encryption and decryption with different message sizes.
-    """
-    session_key = os.urandom(32)
-    mac_key = os.urandom(32)
-    channel = SecureChannel(session_key, mac_key)
-
-    small_msg = b"A" * 64
-    large_msg = b"A" * 1024 * 1024  # 1MB
-
-    start = time.perf_counter()
-    encrypted_small = channel.send_message(small_msg)
-    decrypted_small = channel.receive_message(encrypted_small)
-    end = time.perf_counter()
-    print(f"Encryption+Decryption (64 bytes): {end - start:.6f} sec")
-
-    start = time.perf_counter()
-    encrypted_large = channel.send_message(large_msg)
-    decrypted_large = channel.receive_message(encrypted_large)
-    end = time.perf_counter()
-    print(f"Encryption+Decryption (1MB): {end - start:.6f} sec")
-
-    assert decrypted_small == small_msg
-    assert decrypted_large == large_msg
-
-def benchmark_secure_channel_overhead():
-    """Measure message expansion due to encryption and authentication."""
-    session_key = os.urandom(32)
-    mac_key = os.urandom(32)
-    channel = SecureChannel(session_key, mac_key)
-
-    message_sizes = [16, 64, 256, 1024, 4096, 16384]  # Various message sizes
-    print("\nSecure Channel Message Expansion:")
-
-    for size in message_sizes:
-        message = os.urandom(size)
-        encrypted = channel.send_message(message)
-        expansion_ratio = len(encrypted) / len(message)
-
-        print(f"  Plaintext: {size} bytes -> Encrypted: {len(encrypted)} bytes (x{expansion_ratio:.2f})")
+    times = timeit.repeat(lambda: channel.receive_message(channel.send_message(message)), repeat=5, number=num_iter)
+    print_results("Secure Channel (AES-GCM Encryption + HMAC)", times, num_iter)
 
 def main_benchmarks():
-    print("Running SPAKE2 handshake benchmark...")
+    print("\nRunning SPAKE2 handshake benchmark...")
     benchmark_spake2_handshake(num_iter=100, warmup=5)
 
-    print("\nRunning SPAKE2 secure channel benchmark...")
+    print("\nRunning SPAKE2 key exchange benchmark...")
+    benchmark_spake2_key_exchange(num_iter=1000)
+
+    print("\nRunning Secure Channel benchmark...")
     benchmark_secure_channel(num_iter=1000, warmup=50)
 
-    print("\nBenchmarking effect of message size on encryption/decryption...")
-    benchmark_message_size_effect()
+    # Profiling
+    print("\nProfiling SPAKE2 handshake...")
+    profile_function(run_spake2_handshake, "spake2_handshake")
 
-    print("\nBenchmarking secure channel message expansion...")
-    benchmark_secure_channel_overhead()
+    print("\nProfiling SPAKE2 key exchange...")
+    alice = SPAKE2Party("Alice", PASSWORD, use_m=True)
+    bob = SPAKE2Party("Bob", PASSWORD, use_m=False)
+    alice.receive_peer_message(bob.pi, "Bob")
+    profile_function(lambda: alice.compute_shared_secret(), "spake2_key_exchange")
+
+    print("\nProfiling Secure Channel (AES-GCM)...")
+    channel = setup_secure_channel()
+    message = b"Performance test message for secure channel."
+    profile_function(lambda: channel.receive_message(channel.send_message(message)), "secure_channel")
 
 if __name__ == "__main__":
     main_benchmarks()

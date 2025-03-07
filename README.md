@@ -7,7 +7,7 @@ This project implements **X25519** for key exchange, **Ed25519** for digital sig
 - **X25519 Key Exchange**: Secure elliptic-curve Diffie-Hellman (ECDH) using Curve25519 (**RFC 7748**).
 - **Ed25519 Digital Signatures**: High-performance signing and verification (**RFC 8032**).
 - **Batch Verification**: Efficiently verify multiple Ed25519 signatures.
-- **SIGMA Protocol**: Authenticated key exchange for secure session establishment.
+- **SIGMA Protocol**: Authenticated key exchange for secure session establishment, implementing both a normal version (SIGMA) and an identity & signature protection version (SIGMA-I).
 - **SPAKE2 Protocol**: Password-authenticated key exchange (**RFC 9382**).
 - **Docker Support**: Run the project in a containerized environment.
 
@@ -24,8 +24,8 @@ project_root/
 │   ├── montgomery_double_add.py
 ├── sigma/
 │   ├── sigma.py
-├── spake/
-│   ├── spake.py
+├── spake2/
+│   ├── spake2.py
 ├── tests_ass1/
 │   ├── test_ed25519.py
 │   ├── test_montgomery_double_add.py
@@ -36,7 +36,9 @@ project_root/
 ├── tests/
 │   ├── test_spake2.py
 │   ├── test_sigma.py
+├── benchmarking/
 │   ├── benchmark_sigma.py
+│   ├── benchmark_spake2.py
 ├── requirements.txt
 ├── README.md
 ├── Dockerfile
@@ -108,28 +110,55 @@ assert valid
 
 ### SIGMA Authenticated Key Exchange
 ```python
-from sigma.sigma import SIGMAInitiator, SIGMAResponder
+from sigma.sigma import SigmaParty, SigmaHandshake, SecureChannel
+from sigma.certificates import CertificateAuthority, Certificate
 
-initiator = SIGMAInitiator()
-responder = SIGMAResponder()
+# Step 1: Setup CA and create parties
+ca = CertificateAuthority("TestCA")
+alice = SigmaParty("Alice", ca.public_key)
+bob = SigmaParty("Bob", ca.public_key)
 
-message1 = initiator.start_handshake()
-message2 = responder.respond(message1)
-final_message = initiator.finalize(message2)
+# Issue and assign certificates
+alice.set_certificate(ca.issue_certificate("Alice", alice.ed25519_public))
+bob.set_certificate(ca.issue_certificate("Bob", bob.ed25519_public))
 
-print("SIGMA Handshake Completed.")
+# Step 2: Perform SIGMA handshake
+handshake = SigmaHandshake(alice, bob, identity_protection=False)
+sigma_init_msg = handshake.create_initiation_message()
+sigma_resp_msg = handshake.handle_initiation_message(sigma_init_msg)
+sigma_final_msg = handshake.process_response_message(sigma_resp_msg)
+session_key = handshake.finalize_handshake(sigma_final_msg)
+
+# Step 3: Secure messaging using AES-GCM
+secure_channel_alice = SecureChannel(alice.session_key)
+secure_channel_bob = SecureChannel(bob.session_key)
+
+# Alice sends an encrypted message to Bob
+plaintext = b"Hello Bob, this is a secret message from Alice!"
+encrypted_message = secure_channel_alice.send_message(plaintext)
+
+# Bob decrypts it
+decrypted_message = secure_channel_bob.receive_message(encrypted_message)
+print("\nDecrypted message at Bob:", decrypted_message.decode())
+```
+
+In order to use the identity and signature protection version (SIGMA-I), simply set `identity_protection=True`. All other steps remain the same. 
+
+```python
+# Perform handshake with identity protection enabled
+handshake = SigmaHandshake(alice, bob, identity_protection=True)
 ```
 
 ### SPAKE2 Password-Authenticated Key Exchange 
 ```python
-from spake.spake import SPAKE2Party, SpakeHandshake
+from spake2.spake2 import SPAKE2Party, SPAKE2Handshake
 
 password = b"securepassword"
 
 alice = SPAKE2Party("Alice", password, use_m=True)
 bob = SPAKE2Party("Bob", password, use_m=False)
 
-handshake = SpakeHandshake(alice, bob)
+handshake = SPAKE2Handshake(alice, bob)
 shared_secret, transcript = handshake.run_handshake()
 
 print("Shared Secret:", shared_secret.hex())
@@ -151,13 +180,29 @@ python3 -m pytest tests/
 
 ### Performance Benchmarking
 
-To measure the execution time of the SIGMA protocol, run:
+To measure the performance of the implemented protocols, you can use the provided benchmarking scripts.
+
+#### SIGMA Protocol
+
+To benchmark the SIGMA protocol, run the following command:
 
 ```bash
-python3 tests/benchmark_sigma.py
+python3 benchmarking/benchmark_sigma.py
 ```
 
-This script runs multiple iterations of the SIGMA handshake and reports the average time per run.
+This script performs multiple iterations of the SIGMA handshake, measuring the execution time for each iteration. It then calculates and reports the average time taken per run, providing insights into the protocol's performance.
+
+#### SPAKE2 Protocol
+
+To benchmark the SPAKE2 protocol, run the following command:
+
+```bash
+python3 benchmarking/benchmark_spake2.py
+```
+
+Similar to the SIGMA benchmarking script, this script executes multiple iterations of the SPAKE2 handshake, records the execution times, and reports the average time per run. This helps in evaluating the efficiency of the SPAKE2 implementation.
+
+Additionally, the benchmarking scripts also generate profiling information, which is saved to text files for further analysis. This profiling data includes detailed insights into the performance characteristics of the protocol implementations, helping to identify potential bottlenecks and areas for optimization.
 
 ## Compliance
 
